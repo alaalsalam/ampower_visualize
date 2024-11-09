@@ -1,42 +1,51 @@
 import frappe
 
 @frappe.whitelist()
-def get_linked_documents(doctype, docname):
+def get_sales_order_links(doctype, docname):
 
 	if not doctype or not docname:
 		return []
 
 	linked_docs = []
-
-	# Fetch all fields of type 'Link' in all doctypes where the 'options' field equals the given 'doctype'
-	linked_doctypes = frappe.get_all('DocField',
-		filters={
-			'options': doctype,
-			'fieldtype': 'Link'  # Only fields of type 'Link' must be included
-		},
-		fields=['parent', 'fieldname']  # Fetch the parent doctype and the field name that links to the given doctype
-	)
-
-	# Iterate through the linked doctypes to find related documents
-	for link in linked_doctypes:
-		try:
-			# Fetch all records from the linked doctype where the field (link['fieldname']) matches the given 'docname'
-			linked_records = frappe.get_all(link['parent'],
-				filters={link['fieldname']: docname},
-				fields=['name', 'parent', 'parenttype', 'creation']
-			)
-		except Exception as e:
-			# In case of an error (e.g., if the linked doctype doesn't have a parent), skip to the next iteration
-			continue
-		
-		# Append each linked record to the linked_docs list with its details
-		for record in linked_records:
-			linked_docs.append({
-				'linked_doctype': link['parent'],
-				'linked_name': record['name'],
-				'linked_parent': record['parent'],
-				'linked_parenttype': record['parenttype'],
-				'date': record['creation']
-			})
-
+	sales_orders = get_sales_invoices_from_sales_order(docname)
+	delivery_notes = get_delivery_notes_from_sales_order(docname)
+	linked_docs.append(sales_orders[0])
+	linked_docs.append(delivery_notes[0])
 	return linked_docs
+
+def get_sales_invoices_from_sales_order(sales_order_id):
+    invoice_items = frappe.get_all(
+        "Sales Invoice Item",
+        filters={"sales_order": sales_order_id},
+        fields=["parent"]
+    )
+    invoice_ids = [item["parent"] for item in invoice_items]
+    if invoice_ids:
+        sales_invoices = frappe.get_all(
+            "Sales Invoice",
+            filters={"name": ["in", invoice_ids]},
+            fields=["name", "customer", "posting_date", "total", "status"]
+        )
+    else:
+        sales_invoices = []
+    return sales_invoices
+
+def get_delivery_notes_from_sales_order(sales_order_id):
+    delivery_note_items = frappe.get_all(
+        "Delivery Note Item",
+        filters={"against_sales_order": sales_order_id},
+        fields=["parent"]
+    )
+
+    delivery_note_ids = [item["parent"] for item in delivery_note_items]
+
+    if delivery_note_ids:
+        delivery_notes = frappe.get_all(
+            "Delivery Note",
+            filters={"name": ["in", delivery_note_ids]},
+            fields=["name", "customer", "posting_date", "total", "status"]
+        )
+    else:
+        delivery_notes = []
+
+    return delivery_notes

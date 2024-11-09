@@ -211,16 +211,30 @@ const append_linked_nodes = (doctype, document_name) => {
 	}
 	const nodeElement = document.querySelector(`.${document_name}`);
 	if (!nodeElement.isExpanded) {
-		nodeElement.isExpanded = false;
+		nodeElement.isExpanded = true;
 	}
 	else return;
+	let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.'
+	switch (doctype) {
+		case 'Sales Order':
+			method_type += 'get_sales_order_links';
+			break;
+		default:
+			show_alert("The selected doctype is not part of the sales flow.", "red", 5)
+			return;
+	}
+	final_node_append(doctype, document_name, method_type, nodeElement);
+}
+
+const final_node_append = (doctype, document_name, method_type, nodeElement) => {
 	frappe.call({
-		method: 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.get_linked_documents',
+		method: method_type,
 		args: {
 			doctype: doctype,
 			docname: document_name
 		},
 		callback: function (r) {
+			console.log(r.message)
 			if (!r.message.length) {
 				show_alert("Node cannot be expanded further.", "red");
 				return;
@@ -229,15 +243,17 @@ const append_linked_nodes = (doctype, document_name) => {
 			new_list.className = "active";
 			for (let i = 0; i < r.message.length; i++) {
 				const new_item = document.createElement("li");
-				new_item.className = r.message[i].linked_parent;
+				new_item.className = r.message[i].name;
 				const new_link = document.createElement("a");
 				new_link.innerHTML = `
-					${r.message[i].linked_parent} <br/> 
-					Type: ${r.message[i].linked_parenttype} <br/> 
-					Created on: ${r.message[i].date.split(' ')[0]}
+					Customer: ${r.message[i].customer} <br/> 
+					Invoice ID: ${r.message[i].name} <br/> 
+					Created on: ${r.message[i].posting_date} </br>
+					Status: ${r.message[i].status} </br>
+					Total Amount: ${r.message[i].total}
 				`;
 				new_link.onclick = () => {
-					append_linked_nodes(r.message[i].linked_parenttype, r.message[i].linked_parent);
+					append_linked_nodes(r.message[i].name, r.message[i].name);
 				}
 				new_item.appendChild(new_link);
 				new_list.appendChild(new_item);
