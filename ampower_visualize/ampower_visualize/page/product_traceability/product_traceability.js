@@ -223,18 +223,17 @@ const append_linked_nodes = (doctype, document_name) => {
 			show_alert("The selected doctype is not part of the sales flow.", "red", 5)
 			return;
 	}
-	final_node_append(doctype, document_name, method_type, nodeElement);
+	final_node_append(document_name, method_type, nodeElement);
 }
 
-const final_node_append = (doctype, document_name, method_type, nodeElement) => {
+const final_node_append = (document_name, method_type, nodeElement) => {
 	frappe.call({
 		method: method_type,
 		args: {
-			doctype: doctype,
 			docname: document_name
 		},
 		callback: function (r) {
-			console.log(r.message)
+			console.log(r)
 			if (!r.message.length) {
 				show_alert("Node cannot be expanded further.", "red");
 				return;
@@ -242,18 +241,15 @@ const final_node_append = (doctype, document_name, method_type, nodeElement) => 
 			const new_list = document.createElement("ul");	// creates a new list and populates it with list items (links to documents)
 			new_list.className = "active";
 			for (let i = 0; i < r.message.length; i++) {
+				let string_data = JSON.stringify(r.message[i])
 				const new_item = document.createElement("li");
-				new_item.className = r.message[i].name;
+				new_item.className = string_data;
 				const new_link = document.createElement("a");
 				new_link.innerHTML = `
-					Customer: ${r.message[i].customer} <br/> 
-					Invoice ID: ${r.message[i].name} <br/> 
-					Created on: ${r.message[i].posting_date} </br>
-					Status: ${r.message[i].status} </br>
-					Total Amount: ${r.message[i].total}
+					<strong>${string_data}</strong>
 				`;
 				new_link.onclick = () => {
-					append_linked_nodes(r.message[i].name, r.message[i].name);
+					append_linked_nodes(r.message[i], r.message[i]);
 				}
 				new_item.appendChild(new_link);
 				new_list.appendChild(new_item);
