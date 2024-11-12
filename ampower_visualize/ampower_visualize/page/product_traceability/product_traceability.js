@@ -198,16 +198,16 @@ const refresh_list_properties = () => {
 }
 
 /**
- * takes the doctype and document_name as parameters and configures corresponding backend functions depending on the doctype
+ * configures corresponding backend functions depending on the doctype
  * @param {String} doctype
  * @param {String} document_name
  */
 const configure_query_url = (doctype, document_name) => {
 	if (!doctype || !document_name) {
-		show_alert("Error parsing fields.", "red")
+		show_alert("Error parsing fields.", "red");
 		return;
 	}
-	let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.'
+	let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.';
 	switch (doctype) {
 		case 'Sales Order':
 			method_type += 'get_sales_order_links';
@@ -219,38 +219,37 @@ const configure_query_url = (doctype, document_name) => {
 			method_type += 'get_purchase_order_links';
 			break;
 		default:
-			show_alert("This is the last node.", "red", 5)
+			show_alert("This is the last node.", "red", 5);
 			return;
 	}
+
 	const node_element = document.querySelector(`.${document_name}`);
-	if (!node_element.isExpanded) {
-		node_element.isExpanded = true;
+	if (node_element) {
+		const existingList = node_element.querySelector("ul.active");
+		if (existingList) {
+			existingList.remove();
+		}
+		append_nodes_to_tree(document_name, method_type, node_element);
 	}
-	else return;
-	append_nodes_to_tree(document_name, method_type, node_element);
 }
 
 /**
- * Calls the backend function and iterates over the response
- * then, a child node is created for each link
- * these children are then clubbed into an HTML ul, and appended to the base HTML on canvas
+ * Appends child nodes to tree on the canvas.
  * @param {String} document_name 
  * @param {String} method_type 
- * @param {DOM Element} node_element 
+ * @param {DOM} node_element 
  */
 const append_nodes_to_tree = (document_name, method_type, node_element) => {
 	frappe.call({
 		method: method_type,
-		args: {
-			document_name: document_name
-		},
+		args: { document_name: document_name },
 		callback: function (r) {
-			console.log(r)
+			console.log(r.message)
 			if (!r.message.length) {
 				show_alert("Node cannot be expanded further.", "red");
 				return;
 			}
-			if(areAllObjectsEmpty(r.message[0])) {
+			if (areAllObjectsEmpty(r.message)) {
 				show_alert("No connections found.", "red");
 				return;
 			}
@@ -281,9 +280,8 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
 					});
 				});
 			}
-			$(global_wrapper).find(`.${document_name}`).append(new_list);
-			node_element.isExpanded = true;
-			refresh_list_properties();	// sets properties to newly added list items
+			node_element.appendChild(new_list);
+			refresh_list_properties();
 		},
 		freeze: true,
 		freeze_message: __("Fetching linked documents...")
