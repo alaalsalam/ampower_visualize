@@ -27,7 +27,7 @@ def get_material_requests_from_sales_order(sales_order_name):
 		material_request_items = frappe.get_all(
 			"Material Request Item",
 			filters={"sales_order_item": item.name},
-			fields=["parent", "item_code", "qty"]
+			fields=["parent", "item_code", "qty", "parenttype"]
 		)
 
 		if material_request_items:
@@ -39,7 +39,8 @@ def get_material_requests_from_sales_order(sales_order_name):
 
 				material_requests[material_request].append({
 					"item_code": req_item.get("item_code"),
-					"quantity": req_item.get("qty")
+					"quantity": req_item.get("qty"),
+					"parenttype": req_item.get("parenttype")
 				})
 
 	return material_requests
@@ -50,7 +51,7 @@ def get_delivery_notes_from_sales_order(sales_order):
     delivery_note_items = frappe.db.get_all(
         "Delivery Note Item",
         filters={"against_sales_order": sales_order},
-        fields=["parent as delivery_note", "item_code", "qty as quantity"]
+        fields=["parent as delivery_note", "item_code", "qty as quantity", "parenttype"]
     )
 
     for item in delivery_note_items:
@@ -68,7 +69,7 @@ def get_sales_invoices_from_sales_order(sales_order):
     sales_invoice_items = frappe.db.get_all(
         "Sales Invoice Item",
         filters={"sales_order": sales_order},
-        fields=["parent as sales_invoice", "item_code", "qty as quantity"]
+        fields=["parent as sales_invoice", "item_code", "qty as quantity", "parenttype"]
     )
 
     for item in sales_invoice_items:

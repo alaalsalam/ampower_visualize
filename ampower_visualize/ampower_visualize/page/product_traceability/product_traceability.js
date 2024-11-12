@@ -226,6 +226,12 @@ const append_linked_nodes = (doctype, document_name) => {
 	final_node_append(document_name, method_type, nodeElement);
 }
 
+function areAllObjectsEmpty(obj) {
+	return Object.values(obj).every(
+		value => typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0
+	);
+}
+
 const final_node_append = (document_name, method_type, nodeElement) => {
 	frappe.call({
 		method: method_type,
@@ -238,19 +244,29 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 				show_alert("Node cannot be expanded further.", "red");
 				return;
 			}
-			const new_list = document.createElement("ul");	// creates a new list and populates it with list items (links to documents)
+			if(areAllObjectsEmpty(r.message[0])) {
+				show_alert("No connections found.", "red");
+				return;
+			}
+			const new_list = document.createElement("ul");
 			new_list.className = "active";
 			for (let i = 0; i < r.message.length; i++) {
-				let string_data = JSON.stringify(r.message[i])
+				if (Object.keys(r.message[i]).length === 0 && r.message[i].constructor === Object)	// skips empty json objects returned from the backend
+					continue;
 				const new_item = document.createElement("li");
-				new_item.className = string_data;
 				const new_link = document.createElement("a");
-				new_link.innerHTML = `
-					<strong>${string_data}</strong>
-				`;
-				new_link.onclick = () => {
-					append_linked_nodes(r.message[i], r.message[i]);
-				}
+				Object.keys(r.message[i]).forEach(key => {
+					new_item.className = key;
+					r.message[i][key].forEach(item => {
+						new_link.innerHTML = `
+						Document: ${key} <br/>
+						Item Code: ${item.item_code} <br/> 
+						Quantity: ${item.quantity}`
+					});
+					new_link.onclick = () => {
+						append_linked_nodes("parent", key);
+					}
+				});
 				new_item.appendChild(new_link);
 				new_list.appendChild(new_item);
 			}
