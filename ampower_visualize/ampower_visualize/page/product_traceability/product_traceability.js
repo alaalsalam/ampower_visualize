@@ -219,8 +219,14 @@ const append_linked_nodes = (doctype, document_name) => {
 		case 'Sales Order':
 			method_type += 'get_sales_order_links';
 			break;
+		case 'Material Request':
+			method_type += 'get_material_request_links';
+			break;
+		case 'Purchase Order':
+			method_type += 'get_purchase_order_links';
+			break;
 		default:
-			show_alert("The selected doctype is not part of the sales flow.", "red", 5)
+			show_alert("The selected doctype is not part of the sales / purchase flow.", "red", 5)
 			return;
 	}
 	final_node_append(document_name, method_type, nodeElement);
@@ -230,7 +236,7 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 	frappe.call({
 		method: method_type,
 		args: {
-			docname: document_name
+			document_name: document_name
 		},
 		callback: function (r) {
 			console.log(r)
@@ -255,6 +261,7 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 						const new_link = document.createElement("a");
 						new_item.className = key;
 						new_link.innerHTML = `
+							Type: ${item.parenttype} <br/>
 							Document: ${key} <br/>
 							Item Code: ${item.item_code} <br/> 
 							Quantity: ${item.quantity}
