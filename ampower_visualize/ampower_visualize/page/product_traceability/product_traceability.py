@@ -1,7 +1,7 @@
 import frappe
 
 @frappe.whitelist()
-def get_sales_order_links(docname="SAL-ORD-2024-00008"):
+def get_sales_order_links(docname="SAL-ORD-2024-00011"):
 
 	if not docname:
 		return []

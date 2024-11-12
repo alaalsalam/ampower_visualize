@@ -226,12 +226,6 @@ const append_linked_nodes = (doctype, document_name) => {
 	final_node_append(document_name, method_type, nodeElement);
 }
 
-function areAllObjectsEmpty(obj) {
-	return Object.values(obj).every(
-		value => typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0
-	);
-}
-
 const final_node_append = (document_name, method_type, nodeElement) => {
 	frappe.call({
 		method: method_type,
@@ -251,24 +245,28 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 			const new_list = document.createElement("ul");
 			new_list.className = "active";
 			for (let i = 0; i < r.message.length; i++) {
-				if (Object.keys(r.message[i]).length === 0 && r.message[i].constructor === Object)	// skips empty json objects returned from the backend
+				if (Object.keys(r.message[i]).length === 0 && r.message[i].constructor === Object) {
+					// Skip empty JSON objects returned from the backend
 					continue;
-				const new_item = document.createElement("li");
-				const new_link = document.createElement("a");
+				}
 				Object.keys(r.message[i]).forEach(key => {
-					new_item.className = key;
 					r.message[i][key].forEach(item => {
+						const new_item = document.createElement("li");
+						const new_link = document.createElement("a");
+						new_item.className = key;
 						new_link.innerHTML = `
-						Document: ${key} <br/>
-						Item Code: ${item.item_code} <br/> 
-						Quantity: ${item.quantity}`
+							Document: ${key} <br/>
+							Item Code: ${item.item_code} <br/> 
+							Quantity: ${item.quantity}
+						`;
+						const parent_of_node = item.parenttype;
+						new_link.onclick = () => {
+							append_linked_nodes(parent_of_node, key);
+						};
+						new_item.appendChild(new_link);
+						new_list.appendChild(new_item);
 					});
-					new_link.onclick = () => {
-						append_linked_nodes("parent", key);
-					}
 				});
-				new_item.appendChild(new_link);
-				new_list.appendChild(new_item);
 			}
 			$(global_wrapper).find(`.${document_name}`).append(new_list);
 			nodeElement.isExpanded = true;
@@ -280,11 +278,20 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 }
 
 /**
- * Utility function to call frappe alerts
+ * UTILITY FUNCTIONS
  */
+
+// Function to call frappe alerts
 const show_alert = (message, indicator = "yellow", time = 3) => {	// default time and indicators set
 	frappe.show_alert({
 		message: __(message),
 		indicator: indicator
 	}, time);
+}
+
+// Function to check if all child-objects are empty
+function areAllObjectsEmpty(obj) {
+	return Object.values(obj).every(
+		value => typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0
+	);
 }
