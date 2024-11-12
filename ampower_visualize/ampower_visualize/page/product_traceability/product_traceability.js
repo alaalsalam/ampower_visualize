@@ -169,7 +169,7 @@ const append_dynamic_html = (doctype, document_name) => {
 						<div class="tree">
 							<ul>
 								<li class="${document_name}">
-									<a onclick="append_linked_nodes('${doctype}', '${document_name}')"><b>${doctype} - ${document_name}</b></a>
+									<a onclick="configure_query_url('${doctype}', '${document_name}')"><b>${doctype} - ${document_name}</b></a>
 								</li>
 							</ul>
 						</div>
@@ -198,22 +198,15 @@ const refresh_list_properties = () => {
 }
 
 /**
- * takes the doctype and document_name as parameters and returns a list of links to that document
- * then, this list is iterated and a child node is created for each link
- * these children are then clubbed into an HTML ul, and appended to the base HTML on canvas
+ * takes the doctype and document_name as parameters and configures corresponding backend functions depending on the doctype
  * @param {String} doctype
  * @param {String} document_name
  */
-const append_linked_nodes = (doctype, document_name) => {
+const configure_query_url = (doctype, document_name) => {
 	if (!doctype || !document_name) {
 		show_alert("Error parsing fields.", "red")
 		return;
 	}
-	const nodeElement = document.querySelector(`.${document_name}`);
-	if (!nodeElement.isExpanded) {
-		nodeElement.isExpanded = true;
-	}
-	else return;
 	let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.'
 	switch (doctype) {
 		case 'Sales Order':
@@ -226,13 +219,26 @@ const append_linked_nodes = (doctype, document_name) => {
 			method_type += 'get_purchase_order_links';
 			break;
 		default:
-			show_alert("The selected doctype is not part of the sales / purchase flow.", "red", 5)
+			show_alert("This is the last node.", "red", 5)
 			return;
 	}
-	final_node_append(document_name, method_type, nodeElement);
+	const node_element = document.querySelector(`.${document_name}`);
+	if (!node_element.isExpanded) {
+		node_element.isExpanded = true;
+	}
+	else return;
+	append_nodes_to_tree(document_name, method_type, node_element);
 }
 
-const final_node_append = (document_name, method_type, nodeElement) => {
+/**
+ * Calls the backend function and iterates over the response
+ * then, a child node is created for each link
+ * these children are then clubbed into an HTML ul, and appended to the base HTML on canvas
+ * @param {String} document_name 
+ * @param {String} method_type 
+ * @param {DOM Element} node_element 
+ */
+const append_nodes_to_tree = (document_name, method_type, node_element) => {
 	frappe.call({
 		method: method_type,
 		args: {
@@ -268,7 +274,7 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 						`;
 						const parent_of_node = item.parenttype;
 						new_link.onclick = () => {
-							append_linked_nodes(parent_of_node, key);
+							configure_query_url(parent_of_node, key);
 						};
 						new_item.appendChild(new_link);
 						new_list.appendChild(new_item);
@@ -276,7 +282,7 @@ const final_node_append = (document_name, method_type, nodeElement) => {
 				});
 			}
 			$(global_wrapper).find(`.${document_name}`).append(new_list);
-			nodeElement.isExpanded = true;
+			node_element.isExpanded = true;
 			refresh_list_properties();	// sets properties to newly added list items
 		},
 		freeze: true,
