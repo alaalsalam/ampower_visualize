@@ -46,6 +46,13 @@ const setup_fields = (page, wrapper) => {
 		fieldtype: 'Link',
 		fieldname: 'document',
 		options: previous_doctype_name,
+		get_query() {
+			return {
+				filters: {
+					docstatus: 1
+				}
+			};
+		},
 		change() {
 			const document_name = document_field.get_value();
 			if (document_name && document_name !== previous_document_name) {
