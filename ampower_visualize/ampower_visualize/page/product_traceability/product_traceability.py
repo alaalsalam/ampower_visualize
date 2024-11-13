@@ -1,5 +1,6 @@
 import frappe
 
+
 @frappe.whitelist()
 def get_sales_order_links(document_name):
 
@@ -20,13 +21,19 @@ def get_sales_order_links(document_name):
 
 	return linked_docs
 
+
 def get_delivery_notes_from_sales_order(sales_order):
 	delivery_notes = {}
 
 	delivery_note_items = frappe.db.get_all(
 		"Delivery Note Item",
 		filters={"against_sales_order": sales_order},
-		fields=["parent as delivery_note", "item_code", "qty as quantity", "parenttype"]
+		fields=[
+			"parent as delivery_note",
+			"item_code",
+			"qty as quantity",
+			"parenttype",
+		],
 	)
 
 	for item in delivery_note_items:
@@ -37,13 +44,19 @@ def get_delivery_notes_from_sales_order(sales_order):
 
 	return delivery_notes
 
+
 def get_sales_invoices_from_sales_order(sales_order):
 	sales_invoices = {}
 
 	sales_invoice_items = frappe.db.get_all(
 		"Sales Invoice Item",
 		filters={"sales_order": sales_order},
-		fields=["parent as sales_invoice", "item_code", "qty as quantity", "parenttype"]
+		fields=[
+			"parent as sales_invoice",
+			"item_code",
+			"qty as quantity",
+			"parenttype",
+		],
 	)
 
 	for item in sales_invoice_items:
@@ -54,16 +67,17 @@ def get_sales_invoices_from_sales_order(sales_order):
 
 	return sales_invoices
 
+
 def get_material_requests_from_sales_order(document_name):
-	
+
 	sales_order = frappe.get_doc("Sales Order", document_name)
 	material_requests = {}
-	
+
 	for item in sales_order.items:
 		material_request_items = frappe.get_all(
 			"Material Request Item",
 			filters={"sales_order_item": item.name},
-			fields=["parent", "item_code", "qty", "parenttype"]
+			fields=["parent", "item_code", "qty", "parenttype"],
 		)
 
 		if material_request_items:
@@ -73,13 +87,16 @@ def get_material_requests_from_sales_order(document_name):
 				if material_request not in material_requests:
 					material_requests[material_request] = []
 
-				material_requests[material_request].append({
-					"item_code": req_item.get("item_code"),
-					"quantity": req_item.get("qty"),
-					"parenttype": req_item.get("parenttype")
-				})
+				material_requests[material_request].append(
+					{
+						"item_code": req_item.get("item_code"),
+						"quantity": req_item.get("qty"),
+						"parenttype": req_item.get("parenttype"),
+					}
+				)
 
 	return material_requests
+
 
 def get_purchase_orders_from_sales_order(sales_order):
 	purchase_orders = {}
@@ -87,7 +104,12 @@ def get_purchase_orders_from_sales_order(sales_order):
 	purchase_order_items = frappe.db.get_all(
 		"Purchase Order Item",
 		filters={"sales_order": sales_order},
-		fields=["parent as sales_invoice", "item_code", "qty as quantity", "parenttype"]
+		fields=[
+			"parent as sales_invoice",
+			"item_code",
+			"qty as quantity",
+			"parenttype",
+		],
 	)
 
 	for item in purchase_order_items:
@@ -97,6 +119,7 @@ def get_purchase_orders_from_sales_order(sales_order):
 		purchase_orders[sales_invoice_id].append(item)
 
 	return purchase_orders
+
 
 @frappe.whitelist()
 def get_material_request_links(document_name):
@@ -109,6 +132,7 @@ def get_material_request_links(document_name):
 	linked_docs.append(purchase_orders)
 	return linked_docs
 
+
 def get_purchase_orders_from_material_request(document_name):
 	material_request = frappe.get_doc("Material Request", document_name)
 	purchase_orders = {}
@@ -117,7 +141,7 @@ def get_purchase_orders_from_material_request(document_name):
 		purchase_order_items = frappe.get_all(
 			"Purchase Order Item",
 			filters={"material_request_item": item.name},
-			fields=["parent", "item_code", "qty", "parenttype"]
+			fields=["parent", "item_code", "qty", "parenttype"],
 		)
 
 		if purchase_order_items:
@@ -127,13 +151,16 @@ def get_purchase_orders_from_material_request(document_name):
 				if purchase_order not in purchase_orders:
 					purchase_orders[purchase_order] = []
 
-				purchase_orders[purchase_order].append({
-					"item_code": po_item.get("item_code"),
-					"quantity": po_item.get("qty"),
-					"parenttype": po_item.get("parenttype")
-				})
+				purchase_orders[purchase_order].append(
+					{
+						"item_code": po_item.get("item_code"),
+						"quantity": po_item.get("qty"),
+						"parenttype": po_item.get("parenttype"),
+					}
+				)
 
 	return purchase_orders
+
 
 @frappe.whitelist()
 def get_purchase_order_links(document_name):
@@ -150,13 +177,19 @@ def get_purchase_order_links(document_name):
 
 	return linked_docs
 
+
 def get_purchase_receipts_from_purchase_order(document_name):
 	purchase_receipts = {}
 
 	purchase_receipt_items = frappe.db.get_all(
 		"Purchase Receipt Item",
 		filters={"purchase_order": document_name},
-		fields=["parent as purchase_receipt", "item_code", "qty as quantity", "parenttype"]
+		fields=[
+			"parent as purchase_receipt",
+			"item_code",
+			"qty as quantity",
+			"parenttype",
+		],
 	)
 
 	for item in purchase_receipt_items:
@@ -167,13 +200,19 @@ def get_purchase_receipts_from_purchase_order(document_name):
 
 	return purchase_receipts
 
+
 def get_purchase_invoices_from_purchase_order(document_name):
 	purchase_invoices = {}
 
 	purchase_invoice_items = frappe.db.get_all(
 		"Purchase Invoice Item",
 		filters={"purchase_order": document_name},
-		fields=["parent as purchase_invoice", "item_code", "qty as quantity", "parenttype"]
+		fields=[
+			"parent as purchase_invoice",
+			"item_code",
+			"qty as quantity",
+			"parenttype",
+		],
 	)
 
 	for item in purchase_invoice_items:
