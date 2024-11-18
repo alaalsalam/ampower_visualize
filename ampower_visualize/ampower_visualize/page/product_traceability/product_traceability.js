@@ -230,14 +230,18 @@ const configure_query_url = (doctype, document_name) => {
 			return;
 	}
 	let valid_document_name = modify_escape_sequence(document_name);
-	const node_element = document.querySelector(`.${valid_document_name}`);
-	if (node_element) {
+	const node_elements = document.querySelectorAll(`.${valid_document_name}`);
+	if (node_elements.length === 0) {
+		notify("No matching elements found for the document name.", "red");
+		return;
+	}
+	node_elements.forEach(node_element => {
 		const existingList = node_element.querySelector("ul.active");
 		if (existingList) {
 			existingList.remove();
 		}
 		append_nodes_to_tree(document_name, method_type, node_element);
-	}
+	});
 }
 
 /**
