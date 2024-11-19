@@ -258,7 +258,6 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
 		method: method_type,
 		args: { document_name: document_name },
 		callback: function (r) {
-			console.log(r.message)
 			if (!r.message.length) {
 				notify("Node cannot be expanded further.", "red");
 				return;
