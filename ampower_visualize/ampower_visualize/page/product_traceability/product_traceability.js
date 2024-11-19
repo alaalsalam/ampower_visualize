@@ -32,6 +32,9 @@ const setup_fields = (page, wrapper) => {
 		fieldtype: 'Link',
 		fieldname: 'document_type',
 		options: 'DocType',
+		filters: {
+			name: ["in", ["Sales Order", "Purchase Order", "Sales Invoice", "Purchase Order", "Purchase Invoice", "Material Request", "Delivery Note"]]
+		},
 		change() {
 			const doctype = doctype_field.get_value();
 			if (doctype && doctype !== previous_doctype_name) {
