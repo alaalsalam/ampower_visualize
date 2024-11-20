@@ -32,6 +32,9 @@ const setup_fields = (page, wrapper) => {
 		fieldtype: 'Link',
 		fieldname: 'document_type',
 		options: 'DocType',
+		filters: {
+			name: ["in", ["Sales Order", "Purchase Order", "Sales Invoice", "Purchase Order", "Purchase Invoice", "Material Request", "Delivery Note"]]
+		},
 		change() {
 			const doctype = doctype_field.get_value();
 			if (doctype && doctype !== previous_doctype_name) {
@@ -46,6 +49,13 @@ const setup_fields = (page, wrapper) => {
 		fieldtype: 'Link',
 		fieldname: 'document',
 		options: previous_doctype_name,
+		get_query() {
+			return {
+				filters: {
+					docstatus: 1
+				}
+			};
+		},
 		change() {
 			const document_name = document_field.get_value();
 			if (document_name && document_name !== previous_document_name) {
@@ -141,11 +151,11 @@ const append_static_html = () => {
  */
 const append_dynamic_html = (doctype, document_name) => {
 	if (!doctype) {
-		show_alert("No doctype specified");
+		notify("No doctype specified");
 		return;
 	}
 	if (!document_name) {
-		show_alert("No document name specified");
+		notify("No document name specified");
 		return;
 	}
 	$(global_wrapper).find('.layout-main-section').append(`
@@ -161,7 +171,7 @@ const append_dynamic_html = (doctype, document_name) => {
 				refresh_list_properties();
 			</script>
 			<style>
-				.layer-wrapper{display:flex;align-items:center;justify-content:center;margin-top:5vh}#canvas-container{width:1240px;height:640px;background-color:#fff;border:1px solid #000;box-shadow:0 0 10px rgb(0 0 0 / .1);overflow:hidden;cursor:move}#canvas{position:relative;width:9999px;height:9999px}.tree{width:9999px;height:9999px}.tree ul{padding-top:20px;position:relative;transition:.5s}.tree li{display:inline-table;text-align:center;color:#000;list-style-type:none;position:relative;padding:10px;transition:.5s}.tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;border-top:1px solid #000;width:51%;height:10px;}.tree li::after{right:auto;left:50%;border-left:1px solid #000}.tree li:only-child::after,.tree li:only-child::before{display:none}.tree li:only-child{padding-top:0}.tree li:first-child::before,.tree li:last-child::after{border:0 none}.tree li:last-child::before{border-right:1px solid #000;border-radius:0 5px 0 0;-webkit-border-radius:0 5px 0 0;-moz-border-radius:0 5px 0 0}.tree li:first-child::after{border-radius:5px 0 0 0;-webkit-border-radius:5px 0 0 0;-moz-border-radius:5px 0 0 0}.tree ul ul::before{content:'';position:absolute;top:0;left:50%;border-left:1px solid #000;width:0;height:20px}.tree li a{border:1px solid #000;padding:10px;display:inline-grid;border-radius:5px;text-decoration-line:none;border-radius:5px;transition:.5s;background-color:#ED9226;}.tree li a span{border:1px solid #000;border-radius:5px;color:#000;padding:8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:500}.tree li a:hover,.tree li a:hover i,.tree li a:hover span,.tree li a:hover+ul li a{background-color:#005ce6;border:1px solid #000}.tree li a:hover+ul li::after,.tree li a:hover+ul li::before,.tree li a:hover+ul::before,.tree li a:hover+ul ul::before{border-color:#ED9226}.tree>ul{display:block}.tree ul ul{display:none}.tree ul ul.active{display:block}
+				.layer-wrapper{display:flex;align-items:center;justify-content:center;margin-top:5vh}#canvas-container{width:1240px;height:640px;background-color:#fff;border:1px solid #000;box-shadow:0 0 10px rgb(0 0 0 / .1);overflow:hidden;cursor:move}#canvas{position:relative;width:9999px;height:9999px}.tree{width:999999px;height:9999px}.tree ul{padding-top:20px;position:relative;transition:.2s}.tree li{display:inline-table;text-align:center;color:#000;list-style-type:none;position:relative;padding:10px;transition:.2s}.tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;border-top:1px solid #000;width:51%;height:10px;}.tree li::after{right:auto;left:50%;border-left:1px solid #000}.tree li:only-child::after,.tree li:only-child::before{display:none}.tree li:only-child{padding-top:0}.tree li:first-child::before,.tree li:last-child::after{border:0 none}.tree li:last-child::before{border-right:1px solid #000;border-radius:0 5px 0 0;-webkit-border-radius:0 5px 0 0;-moz-border-radius:0 5px 0 0}.tree li:first-child::after{border-radius:5px 0 0 0;-webkit-border-radius:5px 0 0 0;-moz-border-radius:5px 0 0 0}.tree ul ul::before{content:'';position:absolute;top:0;left:50%;border-left:1px solid #000;width:0;height:20px}.tree li a{border:1px solid #000;padding:10px;display:inline-grid;border-radius:5px;text-decoration-line:none;border-radius:5px;transition:.2s;background-color:#ED9226;}.tree li a span{border:1px solid #000;border-radius:5px;color:#000;padding:8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:500}.tree li a:hover,.tree li a:hover i,.tree li a:hover span,.tree li a:hover+ul li a{background-color:#005ce6;border:1px solid #000;color:#fff}.tree li a:hover+ul li::after,.tree li a:hover+ul li::before,.tree li a:hover+ul::before,.tree li a:hover+ul ul::before{border-color:#ED9226}.tree>ul{display:block}.tree ul ul{display:none}.tree ul ul.active{display:block}
 			</style>
 			<div class="layer-wrapper">
 				<div id="canvas-container">
@@ -169,7 +179,7 @@ const append_dynamic_html = (doctype, document_name) => {
 						<div class="tree">
 							<ul>
 								<li class="${document_name}">
-									<a onclick="append_linked_nodes('${doctype}', '${document_name}')"><b>${doctype} - ${document_name}</b></a>
+									<a onclick="configure_query_url('${doctype}', '${document_name}')"><b>${doctype} - ${document_name}</b></a>
 								</li>
 							</ul>
 						</div>
@@ -184,8 +194,8 @@ const append_dynamic_html = (doctype, document_name) => {
  * Refreshes the list properties for each list item on the canvas
  */
 const refresh_list_properties = () => {
-	const togglerLinks = document.querySelectorAll(".tree a");
-	togglerLinks.forEach(link => {
+	const toggle_links = document.querySelectorAll(".tree a");
+	toggle_links.forEach(link => {
 		link.addEventListener("click", function (event) {
 			event.preventDefault();
 			const childUl = this.nextElementSibling;
@@ -198,53 +208,108 @@ const refresh_list_properties = () => {
 }
 
 /**
- * takes the doctype and document_name as parameters and returns a list of links to that document
- * then, this list is iterated and a child node is created for each link
- * these children are then clubbed into an HTML ul, and appended to the base HTML on canvas
+ * configures corresponding backend functions depending on the doctype
  * @param {String} doctype
  * @param {String} document_name
  */
-const append_linked_nodes = (doctype, document_name) => {
+const configure_query_url = (doctype, document_name) => {
 	if (!doctype || !document_name) {
-		show_alert("Error parsing fields.", "red")
+		notify("Error parsing fields.", "red");
 		return;
 	}
-	const nodeElement = document.querySelector(`.${document_name}`);
-	if (!nodeElement.isExpanded) {
-		nodeElement.isExpanded = false;
+	let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.';
+	switch (doctype) {
+		case 'Sales Order':
+			method_type += 'get_sales_order_links';
+			break;
+		case 'Material Request':
+			method_type += 'get_material_request_links';
+			break;
+		case 'Purchase Order':
+			method_type += 'get_purchase_order_links';
+			break;
+		default:
+			notify("This is the last node.", "red", 5);
+			return;
 	}
-	else return;
+	let valid_document_name = modify_escape_sequence(document_name);
+	const node_elements = document.querySelectorAll(`.${valid_document_name}`);
+	if (node_elements.length === 0) {
+		notify("No matching elements found for the document name.", "red");
+		return;
+	}
+	node_elements.forEach(node_element => {
+		const existingList = node_element.querySelector("ul.active");
+		if (existingList) {
+			existingList.remove();
+		}
+		append_nodes_to_tree(document_name, method_type, node_element);
+	});
+}
+
+/**
+ * Appends child nodes to tree on the canvas.
+ * @param {String} document_name 
+ * @param {String} method_type 
+ * @param {DOM} node_element 
+ */
+const append_nodes_to_tree = (document_name, method_type, node_element) => {
 	frappe.call({
-		method: 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.get_linked_documents',
-		args: {
-			doctype: doctype,
-			docname: document_name
-		},
+		method: method_type,
+		args: { document_name: document_name },
 		callback: function (r) {
 			if (!r.message.length) {
-				show_alert("Node cannot be expanded further.", "red");
+				notify("Node cannot be expanded further.", "red");
 				return;
 			}
-			const new_list = document.createElement("ul");	// creates a new list and populates it with list items (links to documents)
+			if (are_all_objects_empty(r.message)) {
+				notify("No connections found.", "red");
+				return;
+			}
+			const new_list = document.createElement("ul");
 			new_list.className = "active";
 			for (let i = 0; i < r.message.length; i++) {
-				const new_item = document.createElement("li");
-				new_item.className = r.message[i].linked_parent;
-				const new_link = document.createElement("a");
-				new_link.innerHTML = `
-					${r.message[i].linked_parent} <br/> 
-					Type: ${r.message[i].linked_parenttype} <br/> 
-					Created on: ${r.message[i].date.split(' ')[0]}
-				`;
-				new_link.onclick = () => {
-					append_linked_nodes(r.message[i].linked_parenttype, r.message[i].linked_parent);
+				if (Object.keys(r.message[i]).length === 0 && r.message[i].constructor === Object) {
+					// Skip empty JSON objects returned from the backend
+					continue;
 				}
-				new_item.appendChild(new_link);
-				new_list.appendChild(new_item);
+				Object.keys(r.message[i]).forEach(key => {
+					const document_item = document.createElement("li");
+					document_item.className = key;
+					const table = document.createElement("table");
+					table.innerHTML = `
+						<thead>
+							<tr>
+								<th style="border: 1px solid black; padding: 5px;">Item Code</th>
+								<th style="border: 1px solid black; padding: 5px;">Quantity</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					`;
+					r.message[i][key].forEach(item => {
+						const row = document.createElement("tr");
+						row.innerHTML = `
+							<td style="border: 1px solid black; padding: 5px;">${item.item_code}</td>
+							<td style="border: 1px solid black; padding: 5px;">${item.quantity}</td>
+						`;
+						table.querySelector("tbody").appendChild(row);
+					});
+					const new_link = document.createElement("a");
+					new_link.innerHTML = `
+						Type: ${r.message[i][key][0].parenttype} <br/>
+						Document: ${key}
+					`;
+					new_link.onclick = () => {
+						configure_query_url(r.message[i][key][0].parenttype, key);
+					};
+					new_link.appendChild(table);
+					document_item.appendChild(new_link);
+					new_list.appendChild(document_item);
+				});
 			}
-			$(global_wrapper).find(`.${document_name}`).append(new_list);
-			nodeElement.isExpanded = true;
-			refresh_list_properties();	// sets properties to newly added list items
+			node_element.appendChild(new_list);
+			refresh_list_properties();
 		},
 		freeze: true,
 		freeze_message: __("Fetching linked documents...")
@@ -252,11 +317,25 @@ const append_linked_nodes = (doctype, document_name) => {
 }
 
 /**
- * Utility function to call frappe alerts
+ * UTILITY FUNCTIONS
  */
-const show_alert = (message, indicator = "yellow", time = 3) => {	// default time and indicators set
+
+// Sends frappe alerts
+const notify = (message, indicator = "yellow", time = 3) => {	// default time and indicators set
 	frappe.show_alert({
 		message: __(message),
 		indicator: indicator
 	}, time);
+}
+
+// Checks if all child-objects are empty
+const are_all_objects_empty = (obj) => {
+	return Object.values(obj).every(
+		value => typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0
+	);
+}
+
+// Adds back-slashes to the document name as query-selector gives error without escape sequence
+const modify_escape_sequence = (selector) => {
+	return selector.replace(/([!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~])/g, '\\$1');
 }
