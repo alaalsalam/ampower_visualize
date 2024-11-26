@@ -92,53 +92,7 @@ const update_visualization = (wrapper, doctype, document_name) => {
  */
 const append_static_html = () => {
 	$(global_wrapper).find('.layout-main-section').append(`
-		<script>
-			let isDragging = false;
-			let startX, startY;
-			let offsetX = 0, offsetY = 0;
-			let scale = 1;
-			const minScale = 0.1;
-			const maxScale = 5;
-			const updateTransform = () => {
-				document.querySelector('.tree').style.transform = \`translate(\${ offsetX }px, \${ offsetY }px) scale(\${ scale })\`;
-			}
-			const handleMouseDown = (e) => {
-				if (e.target.tagName.toLowerCase() === 'a') return; // Disable drag when clicking on a link
-				isDragging = true;
-				startX = e.clientX - offsetX;
-				startY = e.clientY - offsetY;
-				document.getElementById('canvas-container').style.cursor = 'grabbing';
-			}
-			const handleMouseMove = (e) => {
-				if (isDragging) {
-					offsetX = e.clientX - startX;
-					offsetY = e.clientY - startY;
-					updateTransform();
-				}
-			}
-			const handleMouseUp = () => {
-				isDragging = false;
-				document.getElementById('canvas-container').style.cursor = 'move';
-			}
-
-			const handleWheel = (e) => {
-				e.preventDefault();
-				const delta = e.deltaY > 0 ? 0.9 : 1.1;
-				const newScale = Math.min(Math.max(scale * delta, minScale), maxScale);
-				
-				// Calculate mouse position relative to the tree
-				const rect = document.querySelector('.tree').getBoundingClientRect();
-				const mouseX = e.clientX - rect.left;
-				const mouseY = e.clientY - rect.top;
-				
-				// Adjust offset to zoom towards mouse position
-				offsetX += mouseX * (1 - delta);
-				offsetY += mouseY * (1 - delta);
-
-				scale = newScale;
-				updateTransform();
-			}
-		</script>
+		<script src="https://d3js.org/d3.v7.min.js"/>
 	`);
 }
 
@@ -161,50 +115,10 @@ const append_dynamic_html = (doctype, document_name) => {
 	$(global_wrapper).find('.layout-main-section').append(`
 		<div class="top-level-parent">
 			<script>
-				document.getElementById('canvas-container').addEventListener('mousedown', handleMouseDown);
-				document.getElementById('canvas-container').addEventListener('mousemove', handleMouseMove);
-				document.getElementById('canvas-container').addEventListener('mouseup', handleMouseUp);
-				document.getElementById('canvas-container').addEventListener('mouseleave', handleMouseUp);
-				document.getElementById('canvas-container').addEventListener('wheel', handleWheel);
-				document.querySelector('.tree').style.transformOrigin = '0 0';
-				updateTransform();
-				refresh_list_properties();
+				configure_query_url('${doctype}', '${document_name}');
 			</script>
-			<style>
-				.layer-wrapper{display:flex;align-items:center;justify-content:center;margin-top:5vh}#canvas-container{width:1240px;height:640px;background-color:#fff;border:1px solid #000;box-shadow:0 0 10px rgb(0 0 0 / .1);overflow:hidden;cursor:move}#canvas{position:relative;width:9999px;height:9999px}.tree{width:999999px;height:9999px}.tree ul{padding-top:20px;position:relative;transition:.2s}.tree li{display:inline-table;text-align:center;color:#000;list-style-type:none;position:relative;padding:10px;transition:.2s}.tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;border-top:1px solid #000;width:51%;height:10px;}.tree li::after{right:auto;left:50%;border-left:1px solid #000}.tree li:only-child::after,.tree li:only-child::before{display:none}.tree li:only-child{padding-top:0}.tree li:first-child::before,.tree li:last-child::after{border:0 none}.tree li:last-child::before{border-right:1px solid #000;border-radius:0 5px 0 0;-webkit-border-radius:0 5px 0 0;-moz-border-radius:0 5px 0 0}.tree li:first-child::after{border-radius:5px 0 0 0;-webkit-border-radius:5px 0 0 0;-moz-border-radius:5px 0 0 0}.tree ul ul::before{content:'';position:absolute;top:0;left:50%;border-left:1px solid #000;width:0;height:20px}.tree li a{border:1px solid #000;padding:10px;display:inline-grid;border-radius:5px;text-decoration-line:none;border-radius:5px;transition:.2s;background-color:#ED9226;}.tree li a span{border:1px solid #000;border-radius:5px;color:#000;padding:8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:500}.tree li a:hover,.tree li a:hover i,.tree li a:hover span,.tree li a:hover+ul li a{background-color:#005ce6;border:1px solid #000;color:#fff}.tree li a:hover+ul li::after,.tree li a:hover+ul li::before,.tree li a:hover+ul::before,.tree li a:hover+ul ul::before{border-color:#ED9226}.tree>ul{display:block}.tree ul ul{display:none}.tree ul ul.active{display:block}
-			</style>
-			<div class="layer-wrapper">
-				<div id="canvas-container">
-					<div id="canvas">
-						<div class="tree">
-							<ul>
-								<li class="${document_name}">
-									<a onclick="configure_query_url('${doctype}', '${document_name}')"><b>${doctype} - ${document_name}</b></a>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-			</div>
 		</div>
 	`);
-}
-
-/**
- * Refreshes the list properties for each list item on the canvas
- */
-const refresh_list_properties = () => {
-	const toggle_links = document.querySelectorAll(".tree a");
-	toggle_links.forEach(link => {
-		link.addEventListener("click", function (event) {
-			event.preventDefault();
-			const childUl = this.nextElementSibling;
-			if (childUl) {
-				childUl.classList.toggle("active");
-				this.classList.toggle("expanded");
-			}
-		});
-	});
 }
 
 /**
@@ -213,6 +127,7 @@ const refresh_list_properties = () => {
  * @param {String} document_name
  */
 const configure_query_url = (doctype, document_name) => {
+	console.log(document_name, doctype);
 	if (!doctype || !document_name) {
 		notify("Error parsing fields.", "red");
 		return;
@@ -232,19 +147,8 @@ const configure_query_url = (doctype, document_name) => {
 			notify("This is the last node.", "red", 5);
 			return;
 	}
-	let valid_document_name = modify_escape_sequence(document_name);
-	const node_elements = document.querySelectorAll(`.${valid_document_name}`);
-	if (node_elements.length === 0) {
-		notify("No matching elements found for the document name.", "red");
-		return;
-	}
-	node_elements.forEach(node_element => {
-		const existingList = node_element.querySelector("ul.active");
-		if (existingList) {
-			existingList.remove();
-		}
-		append_nodes_to_tree(document_name, method_type, node_element);
-	});
+	const node_element = document.querySelector(`.top-level-parent`);
+	append_nodes_to_tree(document_name, method_type, node_element);
 }
 
 /**
@@ -254,67 +158,49 @@ const configure_query_url = (doctype, document_name) => {
  * @param {DOM} node_element 
  */
 const append_nodes_to_tree = (document_name, method_type, node_element) => {
-	frappe.call({
-		method: method_type,
-		args: { document_name: document_name },
-		callback: function (r) {
-			if (!r.message.length) {
-				notify("Node cannot be expanded further.", "red");
-				return;
-			}
-			if (are_all_objects_empty(r.message)) {
-				notify("No connections found.", "red");
-				return;
-			}
-			const new_list = document.createElement("ul");
-			new_list.className = "active";
-			for (let i = 0; i < r.message.length; i++) {
-				if (Object.keys(r.message[i]).length === 0 && r.message[i].constructor === Object) {
-					// Skip empty JSON objects returned from the backend
-					continue;
-				}
-				Object.keys(r.message[i]).forEach(key => {
-					const document_item = document.createElement("li");
-					document_item.className = key;
-					const table = document.createElement("table");
-					table.innerHTML = `
-						<thead>
-							<tr>
-								<th style="border: 1px solid black; padding: 5px;">Item Code</th>
-								<th style="border: 1px solid black; padding: 5px;">Quantity</th>
-							</tr>
-						</thead>
-						<tbody>
-						</tbody>
-					`;
-					r.message[i][key].forEach(item => {
-						const row = document.createElement("tr");
-						row.innerHTML = `
-							<td style="border: 1px solid black; padding: 5px;">${item.item_code}</td>
-							<td style="border: 1px solid black; padding: 5px;">${item.quantity}</td>
-						`;
-						table.querySelector("tbody").appendChild(row);
-					});
-					const new_link = document.createElement("a");
-					new_link.innerHTML = `
-						Type: ${r.message[i][key][0].parenttype} <br/>
-						Document: ${key}
-					`;
-					new_link.onclick = () => {
-						configure_query_url(r.message[i][key][0].parenttype, key);
-					};
-					new_link.appendChild(table);
-					document_item.appendChild(new_link);
-					new_list.appendChild(document_item);
-				});
-			}
-			node_element.appendChild(new_list);
-			refresh_list_properties();
-		},
-		freeze: true,
-		freeze_message: __("Fetching linked documents...")
-	});
-}
+    frappe.call({
+        method: method_type,
+        args: { document_name: document_name },
+        callback: function (r) {
+            if (!r.message.items) {
+                notify("Invalid data format or no items to display.", "red");
+                return;
+            }
+
+            const data = r.message.items;
+			console.log(data)
+            if (!Array.isArray(data) || data.length === 0) {
+                notify("No items to display.", "red");
+                return;
+            }
+
+            const graph_data = { nodes: [], links: [] };
+            data.forEach((item, index) => {
+                const parent_node_id = `${item.item_code}-${index}`;
+                graph_data.nodes.push({ id: parent_node_id, label: item.item_name, expanded: false });
+
+                const add_links = (connections, type) => {
+                    connections.forEach(connection => {
+                        graph_data.nodes.push({ 
+                            id: `${type}-${connection[type.toLowerCase()]}`,
+                            label: connection[type.toLowerCase()] 
+                        });
+                        graph_data.links.push({ source: parent_node_id, target: `${type}-${connection[type.toLowerCase()]}` });
+                    });
+                };
+
+                add_links(item.sales_invoices, "sales_invoice");
+                add_links(item.delivery_notes, "delivery_note");
+                add_links(item.material_requests, "material_request");
+                add_links(item.purchase_orders, "purchase_order");
+            });
+
+            visualize_graph(graph_data, node_element);
+        },
+        freeze: true,
+        freeze_message: __("Fetching linked documents...")
+    });
+};
 
 /**
  * UTILITY FUNCTIONS
@@ -339,3 +225,110 @@ const are_all_objects_empty = (obj) => {
 const modify_escape_sequence = (selector) => {
 	return selector.replace(/([!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~])/g, '\\$1');
 }
+
+const prepare_graph_data = (data, root_name, root_type) => {
+    const nodes = [{ id: root_name, type: root_type }];
+    const links = [];
+	console.log(data)
+    data.forEach(item => {
+        Object.keys(item).forEach(key => {
+            nodes.push({ id: key, type: item[key][0] });
+            links.push({ source: root_name, target: key });
+        });
+    });
+	console.log({"nodes": nodes, "links": links})
+    return { nodes, links };
+};
+
+const visualize_graph = (graph_data, node_element) => {
+    const width = 1256, height = 720;
+    d3.select(node_element).select("svg").remove();
+
+    const svg = d3.select(node_element)
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .call(
+            d3.zoom()
+                .scaleExtent([0.1, 3])
+                .on("zoom", event => {
+                    g.attr("transform", event.transform);
+                })
+        )
+        .append("g");
+
+    const g = svg.append("g");
+
+    const simulation = d3.forceSimulation(graph_data.nodes)
+        .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(250))
+        .force("charge", d3.forceManyBody().strength(-100))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+    const link = g.append("g")
+        .selectAll("line")
+        .data(graph_data.links)
+        .enter()
+        .append("line")
+        .attr("stroke", "#999")
+        .attr("stroke-width", 1.5);
+
+    const node = g.append("g")
+        .selectAll("circle")
+        .data(graph_data.nodes)
+        .enter()
+        .append("circle")
+        .attr("r", 36)
+        .attr("fill", "#69b3a2")
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+			const label = g.append("g")
+			.selectAll("text")
+			.data(graph_data.nodes)
+			.enter()
+			.append("text")
+			.text(d => d.label)
+			.style("font-size", "10px")
+			.style("fill", "#fff")
+			.attr("text-anchor", "middle")
+			.attr("alignment-baseline", "middle");
+		
+		label
+			.attr("x", d => d.x)
+			.attr("y", d => d.y);
+
+    simulation.on("tick", () => {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+
+        label
+            .attr("x", d => d.x + 12)
+            .attr("y", d => d.y + 3);
+    });
+
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
+};
