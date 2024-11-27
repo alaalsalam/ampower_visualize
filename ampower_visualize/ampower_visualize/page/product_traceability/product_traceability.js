@@ -173,7 +173,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                 const parent_node_id = `${item.item_code}-${index}`;
                 graph_data.nodes.push({ 
                     id: parent_node_id, 
-                    label: `${item.item_name}\n(${item.item_code})`, 
+                    label: `${item.item_name}\n(${item.item_code}) [Qty: ${item.sales_order_qty}]`, 
                     type: 'sales_order_item',
                     expanded: false 
                 });
@@ -183,7 +183,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                         const child_node_id = `${type}-${connection[type.toLowerCase()]}`;
                         graph_data.nodes.push({ 
                             id: child_node_id,
-                            label: connection[type.toLowerCase()],
+                            label: `${connection[type.toLowerCase()]} [Qty: ${connection.qty}]`, 
                             type: type
                         });
                         graph_data.links.push({ 
@@ -196,7 +196,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                                 const po_node_id = `purchase_order-${po.purchase_order}`;
                                 graph_data.nodes.push({
                                     id: po_node_id,
-                                    label: po.purchase_order,
+                                    label: `${po.purchase_order} [Qty: ${po.qty}]`,
                                     type: 'purchase_order'
                                 });
                                 graph_data.links.push({
@@ -209,7 +209,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                                         const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
                                         graph_data.nodes.push({
                                             id: pi_node_id,
-                                            label: pi.purchase_invoice,
+                                            label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
                                             type: 'purchase_invoice'
                                         });
                                         graph_data.links.push({
@@ -227,7 +227,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                                     const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
                                     graph_data.nodes.push({
                                         id: pi_node_id,
-                                        label: pi.purchase_invoice,
+                                        label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
                                         type: 'purchase_invoice'
                                     });
                                     graph_data.links.push({
@@ -244,7 +244,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                 add_links(item.delivery_notes, "delivery_note");
                 add_links(item.material_requests, "material_request");
                 add_links(item.purchase_orders, "purchase_order");
-            });
+            });            
 
             visualize_graph(graph_data, node_element);
         },
@@ -282,8 +282,8 @@ const visualize_graph = (graph_data, node_element) => {
     };
 
     const simulation = d3.forceSimulation(graph_data.nodes)
-        .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(250))
-        .force("charge", d3.forceManyBody().strength(-100))
+        .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(300))
+        .force("charge", d3.forceManyBody().strength(-1000))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
     const link = g.append("g")
@@ -299,7 +299,7 @@ const visualize_graph = (graph_data, node_element) => {
         .data(graph_data.nodes)
         .enter()
         .append("circle")
-        .attr("r", 36)
+        .attr("r", 25)
         .attr("fill", d => nodeColors[d.type] || '#69b3a2')
         .call(d3.drag()
             .on("start", dragstarted)
