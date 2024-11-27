@@ -127,7 +127,6 @@ const append_dynamic_html = (doctype, document_name) => {
  * @param {String} document_name
  */
 const configure_query_url = (doctype, document_name) => {
-	console.log(document_name, doctype);
 	if (!doctype || !document_name) {
 		notify("Error parsing fields.", "red");
 		return;
@@ -136,12 +135,6 @@ const configure_query_url = (doctype, document_name) => {
 	switch (doctype) {
 		case 'Sales Order':
 			method_type += 'get_sales_order_links';
-			break;
-		case 'Material Request':
-			method_type += 'get_material_request_links';
-			break;
-		case 'Purchase Order':
-			method_type += 'get_purchase_order_links';
 			break;
 		default:
 			notify("This is the last node.", "red", 5);
@@ -162,30 +155,88 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
         method: method_type,
         args: { document_name: document_name },
         callback: function (r) {
+			console.log(r.message);
             if (!r.message.items) {
                 notify("Invalid data format or no items to display.", "red");
                 return;
             }
 
             const data = r.message.items;
-			console.log(data)
             if (!Array.isArray(data) || data.length === 0) {
                 notify("No items to display.", "red");
                 return;
             }
 
             const graph_data = { nodes: [], links: [] };
+            
             data.forEach((item, index) => {
                 const parent_node_id = `${item.item_code}-${index}`;
-                graph_data.nodes.push({ id: parent_node_id, label: item.item_name, expanded: false });
+                graph_data.nodes.push({ 
+                    id: parent_node_id, 
+                    label: `${item.item_name}\n(${item.item_code})`, 
+                    type: 'sales_order_item',
+                    expanded: false 
+                });
 
                 const add_links = (connections, type) => {
                     connections.forEach(connection => {
+                        const child_node_id = `${type}-${connection[type.toLowerCase()]}`;
                         graph_data.nodes.push({ 
-                            id: `${type}-${connection[type.toLowerCase()]}`,
-                            label: connection[type.toLowerCase()] 
+                            id: child_node_id,
+                            label: connection[type.toLowerCase()],
+                            type: type
                         });
-                        graph_data.links.push({ source: parent_node_id, target: `${type}-${connection[type.toLowerCase()]}` });
+                        graph_data.links.push({ 
+                            source: parent_node_id, 
+                            target: child_node_id 
+                        });
+
+                        if (type === 'material_request' && connection.purchase_orders) {
+                            connection.purchase_orders.forEach(po => {
+                                const po_node_id = `purchase_order-${po.purchase_order}`;
+                                graph_data.nodes.push({
+                                    id: po_node_id,
+                                    label: po.purchase_order,
+                                    type: 'purchase_order'
+                                });
+                                graph_data.links.push({
+                                    source: child_node_id,
+                                    target: po_node_id
+                                });
+
+                                if (po.purchase_invoices) {
+                                    po.purchase_invoices.forEach(pi => {
+                                        const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
+                                        graph_data.nodes.push({
+                                            id: pi_node_id,
+                                            label: pi.purchase_invoice,
+                                            type: 'purchase_invoice'
+                                        });
+                                        graph_data.links.push({
+                                            source: po_node_id,
+                                            target: pi_node_id
+                                        });
+                                    });
+                                }
+                            });
+                        }
+
+                        if (type === 'purchase_order') {
+                            if (connection.purchase_invoices) {
+                                connection.purchase_invoices.forEach(pi => {
+                                    const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
+                                    graph_data.nodes.push({
+                                        id: pi_node_id,
+                                        label: pi.purchase_invoice,
+                                        type: 'purchase_invoice'
+                                    });
+                                    graph_data.links.push({
+                                        source: child_node_id,
+                                        target: pi_node_id
+                                    });
+                                });
+                            }
+                        }
                     });
                 };
 
@@ -200,44 +251,6 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
         freeze: true,
         freeze_message: __("Fetching linked documents...")
     });
-};
-
-/**
- * UTILITY FUNCTIONS
- */
-
-// Sends frappe alerts
-const notify = (message, indicator = "yellow", time = 3) => {	// default time and indicators set
-	frappe.show_alert({
-		message: __(message),
-		indicator: indicator
-	}, time);
-}
-
-// Checks if all child-objects are empty
-const are_all_objects_empty = (obj) => {
-	return Object.values(obj).every(
-		value => typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0
-	);
-}
-
-// Adds back-slashes to the document name as query-selector gives error without escape sequence
-const modify_escape_sequence = (selector) => {
-	return selector.replace(/([!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~])/g, '\\$1');
-}
-
-const prepare_graph_data = (data, root_name, root_type) => {
-    const nodes = [{ id: root_name, type: root_type }];
-    const links = [];
-	console.log(data)
-    data.forEach(item => {
-        Object.keys(item).forEach(key => {
-            nodes.push({ id: key, type: item[key][0] });
-            links.push({ source: root_name, target: key });
-        });
-    });
-	console.log({"nodes": nodes, "links": links})
-    return { nodes, links };
 };
 
 const visualize_graph = (graph_data, node_element) => {
@@ -259,6 +272,15 @@ const visualize_graph = (graph_data, node_element) => {
 
     const g = svg.append("g");
 
+    const nodeColors = {
+        'sales_order_item': '#69b3a2',
+        'sales_invoice': '#3498db',
+        'delivery_note': '#e74c3c',
+        'material_request': '#f39c12',
+        'purchase_order': '#2ecc71',
+        'purchase_invoice': '#9b59b6'
+    };
+
     const simulation = d3.forceSimulation(graph_data.nodes)
         .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(250))
         .force("charge", d3.forceManyBody().strength(-100))
@@ -278,26 +300,22 @@ const visualize_graph = (graph_data, node_element) => {
         .enter()
         .append("circle")
         .attr("r", 36)
-        .attr("fill", "#69b3a2")
+        .attr("fill", d => nodeColors[d.type] || '#69b3a2')
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
-			const label = g.append("g")
-			.selectAll("text")
-			.data(graph_data.nodes)
-			.enter()
-			.append("text")
-			.text(d => d.label)
-			.style("font-size", "10px")
-			.style("fill", "#fff")
-			.attr("text-anchor", "middle")
-			.attr("alignment-baseline", "middle");
-		
-		label
-			.attr("x", d => d.x)
-			.attr("y", d => d.y);
+    const label = g.append("g")
+        .selectAll("text")
+        .data(graph_data.nodes)
+        .enter()
+        .append("text")
+        .text(d => d.label)
+        .style("font-size", "10px")
+        .style("fill", "#fff")
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "middle");
 
     simulation.on("tick", () => {
         link
@@ -311,8 +329,8 @@ const visualize_graph = (graph_data, node_element) => {
             .attr("cy", d => d.y);
 
         label
-            .attr("x", d => d.x + 12)
-            .attr("y", d => d.y + 3);
+            .attr("x", d => d.x)
+            .attr("y", d => d.y);
     });
 
     function dragstarted(event, d) {
@@ -332,3 +350,15 @@ const visualize_graph = (graph_data, node_element) => {
         d.fy = null;
     }
 };
+
+/**
+ * UTILITY FUNCTIONS
+ */
+
+// Sends frappe alerts
+const notify = (message, indicator = "yellow", time = 3) => {	// default time and indicators set
+	frappe.show_alert({
+		message: __(message),
+		indicator: indicator
+	}, time);
+}
