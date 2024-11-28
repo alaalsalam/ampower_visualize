@@ -155,8 +155,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
         method: method_type,
         args: { document_name: document_name },
         callback: function (r) {
-            console.log(r.message);
-            if (!r.message.items) {
+            if (!r.message || !r.message.items) {
                 notify("Invalid data format or no items to display.", "red");
                 return;
             }
@@ -171,113 +170,82 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
             const addedNodes = new Set();
             const addedLinks = new Set();
 
+            const addNode = (id, label, type) => {
+                if (!addedNodes.has(id)) {
+                    graph_data.nodes.push({ id, label, type });
+                    addedNodes.add(id);
+                }
+            };
+
+            const addLink = (source, target) => {
+                const link_id = `${source}->${target}`;
+                if (!addedLinks.has(link_id)) {
+                    graph_data.links.push({ source, target });
+                    addedLinks.add(link_id);
+                }
+            };
+
             data.forEach((item, index) => {
                 const parent_node_id = `${item.item_code}-${index}`;
-                if (!addedNodes.has(parent_node_id)) {
-                    graph_data.nodes.push({ 
-                        id: parent_node_id, 
-                        label: `${item.item_name}\n(${item.item_code}) [Qty: ${item.sales_order_qty}]`, 
-                        type: 'sales_order_item',
-                        expanded: false 
-                    });
-                    addedNodes.add(parent_node_id);
-                }
+                addNode(
+                    parent_node_id,
+                    `${item.item_name}\n(${item.item_code}) [Qty: ${item.sales_order_qty}]`,
+                    'sales_order_item'
+                );
 
-                const add_links = (connections, type) => {
+                const addConnections = (connections, type) => {
                     connections.forEach(connection => {
                         const child_node_id = `${type}-${connection[type.toLowerCase()]}`;
-                        if (!addedNodes.has(child_node_id)) {
-                            graph_data.nodes.push({ 
-                                id: child_node_id,
-                                label: `${connection[type.toLowerCase()]} [Qty: ${connection.qty}]`, 
-                                type: type
-                            });
-                            addedNodes.add(child_node_id);
-                        }
-                        const link_id = `${parent_node_id}->${child_node_id}`;
-                        if (!addedLinks.has(link_id)) {
-                            graph_data.links.push({ 
-                                source: parent_node_id, 
-                                target: child_node_id 
-                            });
-                            addedLinks.add(link_id);
-                        }
+                        addNode(
+                            child_node_id,
+                            `${connection[type.toLowerCase()]} [Qty: ${connection.qty}]`,
+                            type
+                        );
+                        addLink(parent_node_id, child_node_id);
 
                         if (type === 'material_request' && connection.purchase_orders) {
                             connection.purchase_orders.forEach(po => {
                                 const po_node_id = `purchase_order-${po.purchase_order}`;
-                                if (!addedNodes.has(po_node_id)) {
-                                    graph_data.nodes.push({
-                                        id: po_node_id,
-                                        label: `${po.purchase_order} [Qty: ${po.qty}]`,
-                                        type: 'purchase_order'
-                                    });
-                                    addedNodes.add(po_node_id);
-                                }
-                                const po_link_id = `${child_node_id}->${po_node_id}`;
-                                if (!addedLinks.has(po_link_id)) {
-                                    graph_data.links.push({
-                                        source: child_node_id,
-                                        target: po_node_id
-                                    });
-                                    addedLinks.add(po_link_id);
-                                }
+                                addNode(
+                                    po_node_id,
+                                    `${po.purchase_order} [Qty: ${po.qty}]`,
+                                    'purchase_order'
+                                );
+                                addLink(child_node_id, po_node_id);
 
                                 if (po.purchase_invoices) {
                                     po.purchase_invoices.forEach(pi => {
                                         const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
-                                        if (!addedNodes.has(pi_node_id)) {
-                                            graph_data.nodes.push({
-                                                id: pi_node_id,
-                                                label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
-                                                type: 'purchase_invoice'
-                                            });
-                                            addedNodes.add(pi_node_id);
-                                        }
-                                        const pi_link_id = `${po_node_id}->${pi_node_id}`;
-                                        if (!addedLinks.has(pi_link_id)) {
-                                            graph_data.links.push({
-                                                source: po_node_id,
-                                                target: pi_node_id
-                                            });
-                                            addedLinks.add(pi_link_id);
-                                        }
+                                        addNode(
+                                            pi_node_id,
+                                            `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
+                                            'purchase_invoice'
+                                        );
+                                        addLink(po_node_id, pi_node_id);
                                     });
                                 }
                             });
                         }
 
-                        if (type === 'purchase_order') {
-                            if (connection.purchase_invoices) {
-                                connection.purchase_invoices.forEach(pi => {
-                                    const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
-                                    if (!addedNodes.has(pi_node_id)) {
-                                        graph_data.nodes.push({
-                                            id: pi_node_id,
-                                            label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
-                                            type: 'purchase_invoice'
-                                        });
-                                        addedNodes.add(pi_node_id);
-                                    }
-                                    const pi_link_id = `${child_node_id}->${pi_node_id}`;
-                                    if (!addedLinks.has(pi_link_id)) {
-                                        graph_data.links.push({
-                                            source: child_node_id,
-                                            target: pi_node_id
-                                        });
-                                        addedLinks.add(pi_link_id);
-                                    }
-                                });
-                            }
+                        if (type === 'purchase_order' && connection.purchase_invoices) {
+                            connection.purchase_invoices.forEach(pi => {
+                                const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
+                                addNode(
+                                    pi_node_id,
+                                    `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
+                                    'purchase_invoice'
+                                );
+                                addLink(child_node_id, pi_node_id);
+                            });
                         }
                     });
                 };
 
-                add_links(item.sales_invoices, "sales_invoice");
-                add_links(item.delivery_notes, "delivery_note");
-                add_links(item.material_requests, "material_request");
-                add_links(item.purchase_orders, "purchase_order");
-            });            
+                addConnections(item.sales_invoices, "sales_invoice");
+                addConnections(item.delivery_notes, "delivery_note");
+                addConnections(item.material_requests, "material_request");
+                addConnections(item.purchase_orders, "purchase_order");
+            });
 
             visualize_graph(graph_data, node_element);
         },
