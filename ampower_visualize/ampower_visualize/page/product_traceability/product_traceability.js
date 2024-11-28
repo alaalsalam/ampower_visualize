@@ -9,14 +9,14 @@ var global_wrapper;
  * initializes a frappe page and wraps its elements inside a default wrapper
  */
 frappe.pages['product_traceability'].on_page_load = (wrapper) => {
-	global_wrapper = wrapper;
-	let page = frappe.ui.make_app_page({
-		parent: wrapper,
-		title: 'Product Traceability',
-		single_column: true
-	});
-	setup_fields(page, wrapper);
-	append_static_html();
+    global_wrapper = wrapper;
+    let page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: 'Product Traceability',
+        single_column: true
+    });
+    setup_fields(page, wrapper);
+    append_static_html();
 }
 
 let previous_doctype_name = 'Select DocType', previous_document_name = 'Select Document'	// default value gets updated after selection
@@ -27,62 +27,62 @@ let previous_doctype_name = 'Select DocType', previous_document_name = 'Select D
  * @param {Object} wrapper
  */
 const setup_fields = (page, wrapper) => {
-	let doctype_field = page.add_field({
-		label: 'Select DocType',
-		fieldtype: 'Link',
-		fieldname: 'document_type',
-		options: 'DocType',
-		filters: {
-			name: ["in", ["Sales Order", "Purchase Order", "Sales Invoice", "Purchase Order", "Purchase Invoice", "Material Request", "Delivery Note"]]
-		},
-		change() {
-			const doctype = doctype_field.get_value();
-			if (doctype && doctype !== previous_doctype_name) {
-				previous_doctype_name = doctype;
-				update_document_field(page, doctype);
-			}
-		}
-	});
+    let doctype_field = page.add_field({
+        label: 'Select DocType',
+        fieldtype: 'Link',
+        fieldname: 'document_type',
+        options: 'DocType',
+        filters: {
+            name: ["in", ["Sales Order", "Purchase Order", "Sales Invoice", "Purchase Order", "Purchase Invoice", "Material Request", "Delivery Note"]]
+        },
+        change() {
+            const doctype = doctype_field.get_value();
+            if (doctype && doctype !== previous_doctype_name) {
+                previous_doctype_name = doctype;
+                update_document_field(page, doctype);
+            }
+        }
+    });
 
-	let document_field = page.add_field({
-		label: 'Select Document',
-		fieldtype: 'Link',
-		fieldname: 'document',
-		options: previous_doctype_name,
-		get_query() {
-			return {
-				filters: {
-					docstatus: 1
-				}
-			};
-		},
-		change() {
-			const document_name = document_field.get_value();
-			if (document_name && document_name !== previous_document_name) {
-				previous_document_name = document_name;
-				update_visualization(wrapper, previous_doctype_name, document_name);
-			}
-		}
-	});
+    let document_field = page.add_field({
+        label: 'Select Document',
+        fieldtype: 'Link',
+        fieldname: 'document',
+        options: previous_doctype_name,
+        get_query() {
+            return {
+                filters: {
+                    docstatus: 1
+                }
+            };
+        },
+        change() {
+            const document_name = document_field.get_value();
+            if (document_name && document_name !== previous_document_name) {
+                previous_document_name = document_name;
+                update_visualization(wrapper, previous_doctype_name, document_name);
+            }
+        }
+    });
 }
 
 /**
  * Utility function to update the document fields
  */
 const update_document_field = (page, doctype) => {
-	const document_field = page.fields_dict.document;
-	document_field.df.options = doctype;
-	document_field.df.label = `Select ${doctype}`;
-	document_field.refresh();
-	document_field.set_value('');
+    const document_field = page.fields_dict.document;
+    document_field.df.options = doctype;
+    document_field.df.label = `Select ${doctype}`;
+    document_field.refresh();
+    document_field.set_value('');
 }
 
 /**
  * Re-populates the wrapper with dynamic HTML elements
  */
 const update_visualization = (wrapper, doctype, document_name) => {
-	$(wrapper).find('.top-level-parent').remove();
-	append_dynamic_html(doctype, document_name);
+    $(wrapper).find('.top-level-parent').remove();
+    append_dynamic_html(doctype, document_name);
 }
 
 /**
@@ -91,7 +91,7 @@ const update_visualization = (wrapper, doctype, document_name) => {
  * - constant values that shouldn't be redeclared
  */
 const append_static_html = () => {
-	$(global_wrapper).find('.layout-main-section').append(`
+    $(global_wrapper).find('.layout-main-section').append(`
 		<script src="https://d3js.org/d3.v7.min.js"/>
 	`);
 }
@@ -104,15 +104,15 @@ const append_static_html = () => {
  * @param {String} document_name
  */
 const append_dynamic_html = (doctype, document_name) => {
-	if (!doctype) {
-		notify("No doctype specified");
-		return;
-	}
-	if (!document_name) {
-		notify("No document name specified");
-		return;
-	}
-	$(global_wrapper).find('.layout-main-section').append(`
+    if (!doctype) {
+        notify("No doctype specified");
+        return;
+    }
+    if (!document_name) {
+        notify("No document name specified");
+        return;
+    }
+    $(global_wrapper).find('.layout-main-section').append(`
 		<div class="top-level-parent">
 			<script>
 				configure_query_url('${doctype}', '${document_name}');
@@ -127,21 +127,21 @@ const append_dynamic_html = (doctype, document_name) => {
  * @param {String} document_name
  */
 const configure_query_url = (doctype, document_name) => {
-	if (!doctype || !document_name) {
-		notify("Error parsing fields.", "red");
-		return;
-	}
-	let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.';
-	switch (doctype) {
-		case 'Sales Order':
-			method_type += 'get_sales_order_links';
-			break;
-		default:
-			notify("This is the last node.", "red", 5);
-			return;
-	}
-	const node_element = document.querySelector(`.top-level-parent`);
-	append_nodes_to_tree(document_name, method_type, node_element);
+    if (!doctype || !document_name) {
+        notify("Error parsing fields.", "red");
+        return;
+    }
+    let method_type = 'ampower_visualize.ampower_visualize.page.product_traceability.product_traceability.';
+    switch (doctype) {
+        case 'Sales Order':
+            method_type += 'get_sales_order_links';
+            break;
+        default:
+            notify("This is the last node.", "red", 5);
+            return;
+    }
+    const node_element = document.querySelector(`.top-level-parent`);
+    append_nodes_to_tree(document_name, method_type, node_element);
 }
 
 /**
@@ -155,6 +155,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
         method: method_type,
         args: { document_name: document_name },
         callback: function (r) {
+            console.log(r.message)
             if (!r.message || !r.message.items) {
                 notify("Invalid data format or no items to display.", "red");
                 return;
@@ -187,11 +188,13 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
 
             data.forEach((item, index) => {
                 const parent_node_id = `${item.item_code}-${index}`;
-                addNode(
-                    parent_node_id,
-                    `${item.item_name}\n(${item.item_code}) [Qty: ${item.sales_order_qty}]`,
-                    'sales_order_item'
-                );
+                graph_data.nodes.push({
+                    id: parent_node_id,
+                    label: `${item.item_name}\n(${item.item_code})\nQty: ${item.sales_order_qty}`,
+                    type: 'sales_order_item',
+                    is_parent: true,
+                    expanded: false
+                });
 
                 const addConnections = (connections, type) => {
                     connections.forEach(connection => {
@@ -274,17 +277,23 @@ const visualize_graph = (graph_data, node_element) => {
     const g = svg.append("g");
 
     const nodeColors = {
-        'sales_order_item': '#69b3a2',
+        'sales_order_item': '#2c3e50',
         'sales_invoice': '#3498db',
         'delivery_note': '#e74c3c',
         'material_request': '#f39c12',
         'purchase_order': '#2ecc71',
-        'purchase_invoice': '#9b59b6'
+        'purchase_invoice': '#9b59b6',
+        'purchase_receipt': '#34495e'
+    };
+
+    const nodeRadii = {
+        'sales_order_item': 60,
+        'default': 36
     };
 
     const simulation = d3.forceSimulation(graph_data.nodes)
         .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(300))
-        .force("charge", d3.forceManyBody().strength(-1000))
+        .force("charge", d3.forceManyBody().strength(-150))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
     const link = g.append("g")
@@ -292,16 +301,19 @@ const visualize_graph = (graph_data, node_element) => {
         .data(graph_data.links)
         .enter()
         .append("line")
-        .attr("stroke", "#999")
-        .attr("stroke-width", 1.5);
+        .attr("stroke", "#bdc3c7")
+        .attr("stroke-width", d => d.source.is_parent ? 2.5 : 1.5)
+        .attr("stroke-opacity", 0.6);
 
     const node = g.append("g")
         .selectAll("circle")
         .data(graph_data.nodes)
         .enter()
         .append("circle")
-        .attr("r", 25)
+        .attr("r", d => d.is_parent ? nodeRadii['sales_order_item'] : nodeRadii['default'])
         .attr("fill", d => nodeColors[d.type] || '#69b3a2')
+        .attr("stroke", d => d.is_parent ? '#2980b9' : 'none')
+        .attr("stroke-width", d => d.is_parent ? 3 : 0)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -313,8 +325,9 @@ const visualize_graph = (graph_data, node_element) => {
         .enter()
         .append("text")
         .text(d => d.label)
-        .style("font-size", "10px")
-        .style("fill", "#fff")
+        .style("font-size", d => d.is_parent ? "12px" : "10px")
+        .style("font-weight", d => d.is_parent ? "bold" : "normal")
+        .style("fill", d => d.is_parent ? "#ecf0f1" : "#fff")
         .attr("text-anchor", "middle")
         .attr("alignment-baseline", "middle");
 
@@ -358,8 +371,8 @@ const visualize_graph = (graph_data, node_element) => {
 
 // Sends frappe alerts
 const notify = (message, indicator = "yellow", time = 3) => {	// default time and indicators set
-	frappe.show_alert({
-		message: __(message),
-		indicator: indicator
-	}, time);
+    frappe.show_alert({
+        message: __(message),
+        indicator: indicator
+    }, time);
 }
