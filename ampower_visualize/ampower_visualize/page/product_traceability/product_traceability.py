@@ -1,7 +1,7 @@
 import frappe
 
 @frappe.whitelist()
-def get_sales_order_links(document_name):
+def get_sales_order_links(document_name="SAL-ORD-2024-00016"):
     sales_order = frappe.get_doc('Sales Order', document_name)
 
     result = {

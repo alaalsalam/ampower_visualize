@@ -155,7 +155,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
         method: method_type,
         args: { document_name: document_name },
         callback: function (r) {
-			console.log(r.message);
+            console.log(r.message);
             if (!r.message.items) {
                 notify("Invalid data format or no items to display.", "red");
                 return;
@@ -168,54 +168,80 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
             }
 
             const graph_data = { nodes: [], links: [] };
-            
+            const addedNodes = new Set();
+            const addedLinks = new Set();
+
             data.forEach((item, index) => {
                 const parent_node_id = `${item.item_code}-${index}`;
-                graph_data.nodes.push({ 
-                    id: parent_node_id, 
-                    label: `${item.item_name}\n(${item.item_code}) [Qty: ${item.sales_order_qty}]`, 
-                    type: 'sales_order_item',
-                    expanded: false 
-                });
+                if (!addedNodes.has(parent_node_id)) {
+                    graph_data.nodes.push({ 
+                        id: parent_node_id, 
+                        label: `${item.item_name}\n(${item.item_code}) [Qty: ${item.sales_order_qty}]`, 
+                        type: 'sales_order_item',
+                        expanded: false 
+                    });
+                    addedNodes.add(parent_node_id);
+                }
 
                 const add_links = (connections, type) => {
                     connections.forEach(connection => {
                         const child_node_id = `${type}-${connection[type.toLowerCase()]}`;
-                        graph_data.nodes.push({ 
-                            id: child_node_id,
-                            label: `${connection[type.toLowerCase()]} [Qty: ${connection.qty}]`, 
-                            type: type
-                        });
-                        graph_data.links.push({ 
-                            source: parent_node_id, 
-                            target: child_node_id 
-                        });
+                        if (!addedNodes.has(child_node_id)) {
+                            graph_data.nodes.push({ 
+                                id: child_node_id,
+                                label: `${connection[type.toLowerCase()]} [Qty: ${connection.qty}]`, 
+                                type: type
+                            });
+                            addedNodes.add(child_node_id);
+                        }
+                        const link_id = `${parent_node_id}->${child_node_id}`;
+                        if (!addedLinks.has(link_id)) {
+                            graph_data.links.push({ 
+                                source: parent_node_id, 
+                                target: child_node_id 
+                            });
+                            addedLinks.add(link_id);
+                        }
 
                         if (type === 'material_request' && connection.purchase_orders) {
                             connection.purchase_orders.forEach(po => {
                                 const po_node_id = `purchase_order-${po.purchase_order}`;
-                                graph_data.nodes.push({
-                                    id: po_node_id,
-                                    label: `${po.purchase_order} [Qty: ${po.qty}]`,
-                                    type: 'purchase_order'
-                                });
-                                graph_data.links.push({
-                                    source: child_node_id,
-                                    target: po_node_id
-                                });
+                                if (!addedNodes.has(po_node_id)) {
+                                    graph_data.nodes.push({
+                                        id: po_node_id,
+                                        label: `${po.purchase_order} [Qty: ${po.qty}]`,
+                                        type: 'purchase_order'
+                                    });
+                                    addedNodes.add(po_node_id);
+                                }
+                                const po_link_id = `${child_node_id}->${po_node_id}`;
+                                if (!addedLinks.has(po_link_id)) {
+                                    graph_data.links.push({
+                                        source: child_node_id,
+                                        target: po_node_id
+                                    });
+                                    addedLinks.add(po_link_id);
+                                }
 
                                 if (po.purchase_invoices) {
                                     po.purchase_invoices.forEach(pi => {
                                         const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
-                                        graph_data.nodes.push({
-                                            id: pi_node_id,
-                                            label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
-                                            type: 'purchase_invoice'
-                                        });
-                                        graph_data.links.push({
-                                            source: po_node_id,
-                                            target: pi_node_id
-                                        });
+                                        if (!addedNodes.has(pi_node_id)) {
+                                            graph_data.nodes.push({
+                                                id: pi_node_id,
+                                                label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
+                                                type: 'purchase_invoice'
+                                            });
+                                            addedNodes.add(pi_node_id);
+                                        }
+                                        const pi_link_id = `${po_node_id}->${pi_node_id}`;
+                                        if (!addedLinks.has(pi_link_id)) {
+                                            graph_data.links.push({
+                                                source: po_node_id,
+                                                target: pi_node_id
+                                            });
+                                            addedLinks.add(pi_link_id);
+                                        }
                                     });
                                 }
                             });
@@ -225,15 +251,22 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                             if (connection.purchase_invoices) {
                                 connection.purchase_invoices.forEach(pi => {
                                     const pi_node_id = `purchase_invoice-${pi.purchase_invoice}`;
-                                    graph_data.nodes.push({
-                                        id: pi_node_id,
-                                        label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
-                                        type: 'purchase_invoice'
-                                    });
-                                    graph_data.links.push({
-                                        source: child_node_id,
-                                        target: pi_node_id
-                                    });
+                                    if (!addedNodes.has(pi_node_id)) {
+                                        graph_data.nodes.push({
+                                            id: pi_node_id,
+                                            label: `${pi.purchase_invoice} [Qty: ${pi.qty}]`,
+                                            type: 'purchase_invoice'
+                                        });
+                                        addedNodes.add(pi_node_id);
+                                    }
+                                    const pi_link_id = `${child_node_id}->${pi_node_id}`;
+                                    if (!addedLinks.has(pi_link_id)) {
+                                        graph_data.links.push({
+                                            source: child_node_id,
+                                            target: pi_node_id
+                                        });
+                                        addedLinks.add(pi_link_id);
+                                    }
                                 });
                             }
                         }
