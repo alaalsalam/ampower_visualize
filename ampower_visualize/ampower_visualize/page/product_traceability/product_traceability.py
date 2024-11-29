@@ -45,13 +45,15 @@ def get_sales_invoices_for_so_item(so_item):
             'sales_order': so_item.parent,
             'item_code': so_item.item_code
         },
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for sinv_item in sinv_items:
         sales_invoices.append({
             'sales_invoice': sinv_item['parent'],
-            'qty': sinv_item['qty']
+            'item_code': sinv_item['item_code'],
+            'qty': sinv_item['qty'],
+            'unique_id': f"{sinv_item['parent']}-{sinv_item['item_code']}-{sinv_item['idx']}"
         })
 
     return sales_invoices
@@ -64,13 +66,15 @@ def get_delivery_notes_for_so_item(so_item):
             'against_sales_order': so_item.parent,
             'item_code': so_item.item_code
         },
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for dn_item in dn_items:
         delivery_notes.append({
             'delivery_note': dn_item['parent'],
-            'qty': dn_item['qty']
+            'item_code': dn_item['item_code'],
+            'qty': dn_item['qty'],
+            'unique_id': f"{dn_item['parent']}-{dn_item['item_code']}-{dn_item['idx']}"
         })
 
     return delivery_notes
@@ -83,13 +87,15 @@ def get_material_requests_for_so_item(so_item):
             'sales_order_item': so_item.name,
             'item_code': so_item.item_code
         },
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for mr_item in mr_items:
         material_requests.append({
             'material_request': mr_item['parent'],
-            'qty': mr_item['qty']
+            'item_code': mr_item['item_code'],
+            'qty': mr_item['qty'],
+            'unique_id': f"{mr_item['parent']}-{mr_item['item_code']}-{mr_item['idx']}"
         })
 
     return material_requests
@@ -99,7 +105,7 @@ def get_purchase_orders_for_mr(material_request_name):
 
     po_items = frappe.get_all('Purchase Order Item', 
         filters={'material_request': material_request_name},
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for po_item in po_items:
@@ -107,9 +113,11 @@ def get_purchase_orders_for_mr(material_request_name):
         purchase_receipts = get_purchase_receipts_for_po(po_item['parent'])
         purchase_orders.append({
             'purchase_order': po_item['parent'],
+            'item_code': po_item['item_code'],
             'qty': po_item['qty'],
             'purchase_invoices': purchase_invoices,
-            'purchase_receipts': purchase_receipts
+            'purchase_receipts': purchase_receipts,
+            'unique_id': f"{po_item['parent']}-{po_item['item_code']}-{po_item['idx']}"
         })
 
     return purchase_orders
@@ -122,7 +130,7 @@ def get_purchase_orders_for_so_item(so_item):
             'sales_order_item': so_item.name,
             'item_code': so_item.item_code
         },
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for po_item in po_items:
@@ -130,9 +138,11 @@ def get_purchase_orders_for_so_item(so_item):
         purchase_receipts = get_purchase_receipts_for_po(po_item['parent'])
         purchase_orders.append({
             'purchase_order': po_item['parent'],
+            'item_code': po_item['item_code'],
             'qty': po_item['qty'],
             'purchase_invoices': purchase_invoices,
-            'purchase_receipts': purchase_receipts
+            'purchase_receipts': purchase_receipts,
+            'unique_id': f"{po_item['parent']}-{po_item['item_code']}-{po_item['idx']}"
         })
 
     return purchase_orders
@@ -142,13 +152,15 @@ def get_purchase_invoices_for_po(purchase_order_name):
 
     pi_items = frappe.get_all('Purchase Invoice Item', 
         filters={'purchase_order': purchase_order_name},
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for pi_item in pi_items:
         purchase_invoices.append({
             'purchase_invoice': pi_item['parent'],
-            'qty': pi_item['qty']
+            'item_code': pi_item['item_code'],
+            'qty': pi_item['qty'],
+            'unique_id': f"{pi_item['parent']}-{pi_item['item_code']}-{pi_item['idx']}"
         })
 
     return purchase_invoices
@@ -158,13 +170,15 @@ def get_purchase_receipts_for_po(purchase_order_name):
 
     pr_items = frappe.get_all('Purchase Receipt Item', 
         filters={'purchase_order': purchase_order_name},
-        fields=['parent', 'qty']
+        fields=['parent', 'item_code', 'qty', 'idx']
     )
 
     for pr_item in pr_items:
         purchase_receipts.append({
             'purchase_receipt': pr_item['parent'],
-            'qty': pr_item['qty']
+            'item_code': pr_item['item_code'],
+            'qty': pr_item['qty'],
+            'unique_id': f"{pr_item['parent']}-{pr_item['item_code']}-{pr_item['idx']}"
         })
 
     return purchase_receipts
