@@ -268,6 +268,40 @@ const visualize_graph = (graph_data, node_element) => {
         'default': 36
     };
 
+    const legendData = [
+        { type: 'root', label: 'Root Document' },
+        { type: 'sales_order_item', label: 'Sales Order Item' },
+        { type: 'sales_invoice', label: 'Sales Invoice' },
+        { type: 'delivery_note', label: 'Delivery Note' },
+        { type: 'material_request', label: 'Material Request' },
+        { type: 'purchase_order', label: 'Purchase Order' },
+        { type: 'purchase_invoice', label: 'Purchase Invoice' },
+        { type: 'purchase_receipt', label: 'Purchase Receipt' }
+    ];
+
+    const legendGroup = svg.append("g")
+        .attr("transform", `translate(20, 10)`);
+
+    const legendItems = legendGroup.selectAll(".legend-item")
+        .data(legendData)
+        .enter()
+        .append("g")
+        .attr("transform", (d, i) => `translate(${i * 150}, 0)`);
+
+    legendItems.append("rect")
+        .attr("width", 20)
+        .attr("height", 20)
+        .attr("fill", d => nodeColors[d.type] || '#69b3a2')
+        .attr("stroke", d => d.type === 'sales_order_item' ? '#2980b9' : 'none')
+        .attr("stroke-width", d => d.type === 'sales_order_item' ? 2 : 0);
+
+    legendItems.append("text")
+        .attr("x", 25)
+        .attr("y", 15)
+        .text(d => d.label)
+        .style("fill", "#555555")
+        .style("font-size", "12px");
+
     const format_document_url = (base_url, type, label) => {
         let formatted_label, document_name;
         if (type === "root") {
