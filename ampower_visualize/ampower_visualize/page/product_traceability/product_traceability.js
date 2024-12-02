@@ -259,13 +259,30 @@ const visualize_graph = (graph_data, node_element) => {
         'material_request': '#f39c12',
         'purchase_order': '#2ecc71',
         'purchase_invoice': '#9b59b6',
-        'purchase_receipt': '#34495e'
+        'purchase_receipt': '#34495e',
+        'root': '#1abc9c'
     };
 
-    const nodeRadii = {
+    const nodeSizes = {
         'sales_order_item': 60,
         'default': 36
     };
+
+    const format_document_url = (base_url, type, label) => {
+        let formatted_label, document_name;
+        if (type === "root") {
+            formatted_label = "sales-order";
+        }
+        else if (type === "sales_order_item") {
+            formatted_label = "item";
+        }
+        else formatted_label = type.replace(/_/g, '-');
+        if (type === "sales_order_item") {
+            document_name = label.match(/\((.*?)\)/)[1];
+        }
+        else document_name = label.split(' ')[0];
+        return `${base_url}/app/${formatted_label}/${document_name}`;
+    }
 
     const simulation = d3.forceSimulation(graph_data.nodes)
         .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(300))
@@ -282,23 +299,29 @@ const visualize_graph = (graph_data, node_element) => {
         .attr("stroke-opacity", 0.6);
 
     const node = g.append("g")
-        .selectAll("circle")
+        .selectAll("rect")
         .data(graph_data.nodes)
         .enter()
-        .append("circle")
-        .attr("r", d => d.is_parent ? nodeRadii['sales_order_item'] : nodeRadii['default'])
+        .append("rect")
+        .attr("width", d => d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default'])
+        .attr("height", d => d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default'])
         .attr("fill", d => nodeColors[d.type] || '#69b3a2')
         .attr("stroke", d => d.is_parent ? '#2980b9' : 'none')
         .attr("stroke-width", d => d.is_parent ? 3 : 0)
+        .attr("x", d => d.x - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2)
+        .attr("y", d => d.y - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
     const label = g.append("g")
-        .selectAll("text")
+        .selectAll("a")
         .data(graph_data.nodes)
         .enter()
+        .append("a")
+        .attr("xlink:href", d => format_document_url(window.location.origin, d.type, d.label))
+        .attr("target", "_blank")
         .append("text")
         .text(d => d.label)
         .style("font-size", d => d.is_parent ? "12px" : "10px")
@@ -315,8 +338,8 @@ const visualize_graph = (graph_data, node_element) => {
             .attr("y2", d => d.target.y);
 
         node
-            .attr("cx", d => d.x)
-            .attr("cy", d => d.y);
+            .attr("x", d => d.x - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2)
+            .attr("y", d => d.y - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2);
 
         label
             .attr("x", d => d.x)
