@@ -10,7 +10,7 @@ This tool is built for users who deal with orders placed on a daily basis and of
 
 It can be used for the following use-cases:
 
-1. **Enhanced Traceability**: Quickly trace the origin and flow of products or documents, improving quality control and audit processes.
+1. **Enhanced Traceability**: Quickly trace the origin and flow of products or documents, improving quality control traceability.
 2. **Improved Decision Making**: Visualize relationships for better-informed decisions.
 3. **Efficient Troubleshooting**: Identify dependencies and resolve issues faster.
 4. **User-Friendly Interface**: Accessible for both technical and non-technical users.
