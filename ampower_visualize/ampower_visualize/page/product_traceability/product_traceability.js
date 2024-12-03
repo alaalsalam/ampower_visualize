@@ -141,7 +141,7 @@ const configure_query_url = (doctype, document_name) => {
             return;
     }
     const node_element = document.querySelector(`.top-level-parent`);
-    append_nodes_to_tree(document_name, method_type, node_element);
+    get_graph_data(document_name, method_type, node_element);
 }
 
 /**
@@ -150,7 +150,7 @@ const configure_query_url = (doctype, document_name) => {
  * @param {String} method_type
  * @param {DOM Element} node_element
  */
-const append_nodes_to_tree = (document_name, method_type, node_element) => {
+const get_graph_data = (document_name, method_type, node_element) => {
     frappe.call({
         method: method_type,
         args: { document_name: document_name },

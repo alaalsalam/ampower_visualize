@@ -49,7 +49,7 @@ It can be used for the following use-cases:
 
 ### Customizations:
 
-Ampower Visualize uses **D3.js**, a powerful JavaScript library, to render the interactive document tree. The library consumes JSON data from the backend and creates a graphical representation of the basis of this input.
+Ampower Visualize uses **D3.js**, a powerful JavaScript library, to render the interactive document graph. The library consumes JSON data from the backend and creates a graphical representation of the basis of this input.
 
 - Node colors and sizes vary by document type.
 - A legend helps users identify node types and their significance.
