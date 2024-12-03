@@ -145,10 +145,10 @@ const configure_query_url = (doctype, document_name) => {
 }
 
 /**
- * Appends child nodes to tree on the canvas.
- * @param {String} document_name 
- * @param {String} method_type 
- * @param {DOM} node_element 
+ * Fetches data from the backend function, formats it into a JSON that can be consumed directly by the library functions
+ * @param {String} document_name
+ * @param {String} method_type
+ * @param {DOM Element} node_element
  */
 const append_nodes_to_tree = (document_name, method_type, node_element) => {
     frappe.call({
@@ -169,8 +169,9 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                 if (!existing_nodes.has(parent_node_id)) {
                     graph_data.nodes.push({
                         id: parent_node_id,
-                        label: `${item.item_name}\n(${item.item_code})\nQty: ${item.sales_order_qty}`,
+                        label: `${item.item_name}\n(${item.item_code})`,
                         type: 'sales_order_item',
+                        qty: item.sales_order_qty,
                         is_parent: true,
                         expanded: false
                     });
@@ -184,8 +185,10 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                         if (!existing_nodes.has(child_node_id)) {
                             graph_data.nodes.push({
                                 id: child_node_id,
-                                label: `${connection[type]} [Qty: ${connection.qty}]`,
+                                label: `${connection[type]}`,
                                 type: type,
+                                qty: connection.qty,
+                                status: connection.status,
                                 is_parent: false
                             });
                             existing_nodes.add(child_node_id);
@@ -210,6 +213,7 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
                     id: root_node_id,
                     label: document_name,
                     type: "root",
+                    qty: '',
                     is_parent: true,
                     expanded: false,
                 });
@@ -233,6 +237,11 @@ const append_nodes_to_tree = (document_name, method_type, node_element) => {
     });
 };
 
+/**
+ * Creates a graph using the JSON data and appends it to the root node
+ * @param {Dict} graph_data
+ * @param {DOM Element} node_element
+ */
 const visualize_graph = (graph_data, node_element) => {
     const width = 1256, height = 720;
     d3.select(node_element).select("svg").remove();
@@ -252,15 +261,17 @@ const visualize_graph = (graph_data, node_element) => {
 
     const g = svg.append("g");
 
+    const parentNodes = graph_data.nodes.filter(node => node.is_parent);
+
     const nodeColors = {
-        'sales_order_item': '#2c3e50',
+        'sales_order_item': '#ff59d0',
         'sales_invoice': '#3498db',
         'delivery_note': '#e74c3c',
         'material_request': '#f39c12',
         'purchase_order': '#2ecc71',
         'purchase_invoice': '#9b59b6',
         'purchase_receipt': '#34495e',
-        'root': '#1abc9c'
+        'root': '#b0b336'
     };
 
     const nodeSizes = {
@@ -292,8 +303,6 @@ const visualize_graph = (graph_data, node_element) => {
         .attr("width", 20)
         .attr("height", 20)
         .attr("fill", d => nodeColors[d.type] || '#69b3a2')
-        .attr("stroke", d => d.type === 'sales_order_item' ? '#2980b9' : 'none')
-        .attr("stroke-width", d => d.type === 'sales_order_item' ? 2 : 0);
 
     legendItems.append("text")
         .attr("x", 25)
@@ -319,18 +328,53 @@ const visualize_graph = (graph_data, node_element) => {
     }
 
     const simulation = d3.forceSimulation(graph_data.nodes)
-        .force("link", d3.forceLink(graph_data.links).id(d => d.id).distance(300))
-        .force("charge", d3.forceManyBody().strength(-150))
-        .force("center", d3.forceCenter(width / 2, height / 2));
+        .force("link", d3.forceLink(graph_data.links)
+            .id(d => d.id)
+            .distance(300)
+        )
+        .force("charge", d3.forceManyBody()
+            .strength(-100)
+        )
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("parent_repulsion", d => {
+            for (let i = 0; i < graph_data.nodes.length; i++) {
+                if (!graph_data.nodes[i].is_parent) {
+                    for (let j = 0; j < parentNodes.length; j++) {
+                        console.log(parentNodes.len)
+                        const parent = parentNodes[j];
+                        const node = graph_data.nodes[i];
+                        
+                        const dx = node.x - parent.x;
+                        const dy = node.y - parent.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        const strength = 0.5;
+                        node.vx += dx / distance * strength;
+                        node.vy += dy / distance * strength;
+                    }
+                }
+            }
+        })
+        .alphaDecay(0)
+        .alphaMin(0.001)
+        .alphaTarget(0.3);
 
     const link = g.append("g")
         .selectAll("line")
         .data(graph_data.links)
         .enter()
-        .append("line")
-        .attr("stroke", "#bdc3c7")
+        .append("g");
+
+        link.append("line")
+        .attr("stroke", "#696C71")
         .attr("stroke-width", d => d.source.is_parent ? 2.5 : 1.5)
         .attr("stroke-opacity", 0.6);
+
+        link.append("text")
+        .attr("text-anchor", "end")
+        .style("font-size", "14px")
+        .style("fill", "#696C71")
+        .text(d => `${d.target.status ? d.target.status + " [Qty: " + d.target.qty + "]" : ''}`);
 
     const node = g.append("g")
         .selectAll("rect")
@@ -340,8 +384,6 @@ const visualize_graph = (graph_data, node_element) => {
         .attr("width", d => d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default'])
         .attr("height", d => d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default'])
         .attr("fill", d => nodeColors[d.type] || '#69b3a2')
-        .attr("stroke", d => d.is_parent ? '#2980b9' : 'none')
-        .attr("stroke-width", d => d.is_parent ? 3 : 0)
         .attr("x", d => d.x - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2)
         .attr("y", d => d.y - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2)
         .call(d3.drag()
@@ -360,7 +402,7 @@ const visualize_graph = (graph_data, node_element) => {
         .text(d => d.label)
         .style("font-size", d => d.is_parent ? "12px" : "10px")
         .style("font-weight", d => d.is_parent ? "bold" : "normal")
-        .style("fill", d => d.is_parent ? "#ecf0f1" : "#fff")
+        .style("fill", d => "#000")
         .attr("text-anchor", "middle")
         .attr("alignment-baseline", "middle");
 
@@ -370,6 +412,16 @@ const visualize_graph = (graph_data, node_element) => {
             .attr("y1", d => d.source.y)
             .attr("x2", d => d.target.x)
             .attr("y2", d => d.target.y);
+        
+        link.selectAll("line")
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        link.selectAll("text")
+            .attr("x", d => (d.source.x + d.target.x) / 2)
+            .attr("y", d => (d.source.y + d.target.y) / 2);
 
         node
             .attr("x", d => d.x - (d.is_parent ? nodeSizes['sales_order_item'] : nodeSizes['default']) / 2)
