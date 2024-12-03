@@ -33,7 +33,7 @@ const setup_fields = (page, wrapper) => {
         fieldname: 'document_type',
         options: 'DocType',
         filters: {
-            name: ["in", ["Sales Order", "Purchase Order", "Sales Invoice", "Purchase Order", "Purchase Invoice", "Material Request", "Delivery Note"]]
+            name: ["in", ["Sales Order"]]
         },
         change() {
             const doctype = doctype_field.get_value();
@@ -340,7 +340,6 @@ const visualize_graph = (graph_data, node_element) => {
             for (let i = 0; i < graph_data.nodes.length; i++) {
                 if (!graph_data.nodes[i].is_parent) {
                     for (let j = 0; j < parentNodes.length; j++) {
-                        console.log(parentNodes.len)
                         const parent = parentNodes[j];
                         const node = graph_data.nodes[i];
                         
